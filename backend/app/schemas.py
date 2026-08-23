@@ -48,8 +48,8 @@ class RouteStep(BaseModel):
     traffic_density_index: float
 
 class PathCoordinate(BaseModel):
-    node_id: str
-    name: str
+    node_id: Optional[str] = None
+    name: Optional[str] = None
     lat: float
     lng: float
 

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Traffic & Route Optimizer | Multi-Objective AI + C++ Dijkstra</title>
+  <title>Smart Traffic Route Optimizer | Multi-Objective AI + C++ Dijkstra</title>
   
-  <!-- Fonts -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -17,10 +17,14 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div class="app-layout">
+
+  <!-- =========================================================================
+       PAGE 1: DEDICATED JOURNEY PLANNER & ENDPOINTS ENTRY PAGE
+       ========================================================================= -->
+  <div id="view-planner" class="view-page active">
     
-    <!-- Top Navbar -->
-    <header class="top-nav">
+    <!-- Header -->
+    <header class="planner-navbar">
       <div class="brand">
         <div class="brand-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -29,243 +33,346 @@
         </div>
         <div>
           <h1 class="brand-title">Smart Traffic Route Optimizer</h1>
-          <p class="brand-subtitle">Multi-Objective Routing • Time • Fuel • Weather • C++ Dijkstra</p>
+          <p class="brand-subtitle">AI Travel-Time Prediction • Fuel Physics • Weather Resilience • C++ Dijkstra</p>
         </div>
       </div>
 
       <div class="nav-telemetry">
-        <div class="status-badge live">
-          <span class="pulse-dot"></span>
-          <span>ML Gradient Boosting (R²=0.99)</span>
-        </div>
-        <div class="status-badge cpp">
-          <span class="badge-icon">⚡</span>
-          <span>C++ Dijkstra Engine</span>
-        </div>
-        <div class="status-badge weather" id="nav-weather-badge">
-          <span id="nav-weather-icon">☀️</span>
-          <span id="nav-weather-text">Clear Sky</span>
-        </div>
+        <span class="status-badge live"><span class="pulse-dot"></span> ML Gradient Boosting (R²=0.99)</span>
+        <span class="status-badge cpp">⚡ C++ Engine Ready</span>
       </div>
     </header>
 
-    <!-- Main Workspace Grid -->
-    <main class="main-content">
-      
-      <!-- Left Sidebar: Controls & Parameters -->
-      <aside class="sidebar-panel">
-        <div class="panel-card">
-          <h2 class="section-title">
-            <span class="icon">📍</span> Journey Endpoints
-          </h2>
+    <!-- Center Hero Card Container -->
+    <main class="planner-main">
+      <div class="planner-card-container">
+        
+        <div class="planner-hero-heading">
+          <h2>Plan Your Smart Route</h2>
+          <p>Find the optimal balance between <strong>Fastest ETA</strong>, <strong>Lowest Fuel/Energy</strong>, and <strong>Weather Safety</strong> across Delhi NCR.</p>
+        </div>
+
+        <div class="planner-card">
           
-          <div class="form-group">
-            <label for="select-source">Origin / Start Location</label>
-            <select id="select-source" class="custom-select">
-              <!-- Dynamically populated -->
-            </select>
+          <!-- Step 1: Origin and Destination Search -->
+          <div class="planner-section">
+            <label class="planner-label">Journey Endpoints</label>
+            
+            <div class="endpoints-input-container">
+              
+              <!-- Origin Search -->
+              <div class="search-field-box">
+                <span class="endpoint-marker start">🟢</span>
+                <div class="field-content">
+                  <span class="field-title">Starting Location</span>
+                  <input type="text" id="planner-search-source" class="planner-text-input" placeholder="Search origin (e.g. Connaught Place, Rohini, Noida...)" autocomplete="off">
+                </div>
+                <button id="btn-planner-clear-src" class="btn-clear-x" title="Clear">✕</button>
+                <div id="planner-src-dropdown" class="planner-dropdown hidden"></div>
+              </div>
+
+              <!-- Swap Button -->
+              <button id="btn-planner-swap" class="btn-swap-endpoints" title="Swap Origin and Destination">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                  <polyline points="17 14 12 9 7 14"></polyline>
+                  <line x1="12" y1="9" x2="12" y2="21"></line>
+                </svg>
+              </button>
+
+              <!-- Destination Search -->
+              <div class="search-field-box">
+                <span class="endpoint-marker dest">🔴</span>
+                <div class="field-content">
+                  <span class="field-title">Destination</span>
+                  <input type="text" id="planner-search-dest" class="planner-text-input" placeholder="Search destination (e.g. Gurgaon Cyber City, Airport, Saket...)" autocomplete="off">
+                </div>
+                <button id="btn-planner-clear-dst" class="btn-clear-x" title="Clear">✕</button>
+                <div id="planner-dst-dropdown" class="planner-dropdown hidden"></div>
+              </div>
+
+            </div>
+
+            <!-- Popular Quick Shortcuts -->
+            <div class="quick-chips-row">
+              <span class="quick-label">Popular Trips:</span>
+              <button class="quick-chip" data-src="NODE_CP" data-dst="NODE_CYBER">CP ➔ Cyber City</button>
+              <button class="quick-chip" data-src="NODE_KG" data-dst="NODE_NOIDA_18">Kashmere Gate ➔ Noida Sec 18</button>
+              <button class="quick-chip" data-src="NODE_ROH" data-dst="NODE_IGI">Rohini ➔ IGI Airport</button>
+              <button class="quick-chip" data-src="NODE_JAN" data-dst="NODE_AKSHAR">Janakpuri ➔ Akshardham</button>
+            </div>
           </div>
 
-          <div class="swap-button-container">
-            <button id="btn-swap-nodes" class="btn-icon" title="Swap Origin and Destination">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-                <polyline points="17 14 12 9 7 14"></polyline>
-                <line x1="12" y1="9" x2="12" y2="21"></line>
-              </svg>
-            </button>
+          <!-- Step 2: Vehicle Selection -->
+          <div class="planner-section">
+            <label class="planner-label">Select Vehicle Powertrain</label>
+            <div class="vehicle-pill-grid" id="planner-vehicle-grid">
+              <!-- Dynamically populated -->
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="select-destination">Destination</label>
-            <select id="select-destination" class="custom-select">
-              <!-- Dynamically populated -->
-            </select>
+          <!-- Step 3: Context & Weather Conditions -->
+          <div class="planner-section conditions-grid">
+            <div class="condition-col">
+              <label class="planner-label" for="planner-weather-select">Weather Condition</label>
+              <select id="planner-weather-select" class="planner-select">
+                <option value="Clear">☀️ Clear Sky / Normal</option>
+                <option value="Light_Rain">🌦️ Light Rain (Wet Asphalt)</option>
+                <option value="Heavy_Rain">🌧️ Heavy Rain (Waterlogging Alerts)</option>
+                <option value="Dense_Fog">🌫️ Dense Smog / Winter Fog (<200m Vis)</option>
+                <option value="Extreme_Heat">🔥 Extreme Heatwave (45°C+ AC Load)</option>
+                <option value="Storm">⛈️ Severe Thunderstorm / High Wind</option>
+              </select>
+            </div>
+
+            <div class="condition-col">
+              <div class="slider-label-row">
+                <label class="planner-label">Departure Time</label>
+                <span class="time-badge" id="planner-time-display">09:00 AM (Peak Rush)</span>
+              </div>
+              <input type="range" id="planner-hour-slider" min="0" max="23" value="9" class="planner-slider">
+              <div class="slider-subticks">
+                <span>12 AM</span>
+                <span class="rush-tick">8-11 AM Rush</span>
+                <span>2 PM</span>
+                <span class="rush-tick">5-9 PM Rush</span>
+                <span>11 PM</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main CTA Submit Button -->
+          <button id="btn-find-routes" class="btn-find-routes-glow">
+            <span>🚀 Calculate & Show Optimal Routes</span>
+          </button>
+
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+
+  <!-- =========================================================================
+       PAGE 2: MAP & ROUTE VISUALIZATION RESULTS PAGE
+       ========================================================================= -->
+  <div id="view-results" class="view-page">
+    
+    <!-- Top Floating Navigation Bar -->
+    <header class="results-topbar">
+      
+      <!-- Back to Planner Button -->
+      <button id="btn-back-to-planner" class="btn-back-nav" title="Change Endpoints or Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Change Search</span>
+      </button>
+
+      <!-- Active Trip Summary Pill -->
+      <div class="trip-summary-pill">
+        <span class="trip-point start" id="res-start-name">Connaught Place</span>
+        <span class="trip-arrow">➔</span>
+        <span class="trip-point end" id="res-end-name">Gurgaon Cyber City</span>
+        <span class="trip-meta" id="res-trip-meta">🚗 Petrol Sedan • ☀️ Clear • 09:00 AM</span>
+      </div>
+
+      <!-- Right Action Controls -->
+      <div class="results-top-actions">
+        
+        <!-- Google Live Traffic Toggle -->
+        <button id="btn-toggle-traffic" class="btn-traffic-toggle active" title="Toggle Real-Time Google Traffic Layer">
+          <span>🚦 Traffic: ON</span>
+        </button>
+
+        <!-- Google Maps API Key Modal Trigger -->
+        <button id="btn-open-gmaps-modal" class="btn-gmaps-key" title="Configure Google Maps API Key">
+          <span>🔑 Google Maps Key</span>
+        </button>
+
+        <!-- Map Layer Switcher -->
+        <div class="map-layer-dropdown-container">
+          <select id="select-map-layer" class="select-map-style" title="Switch Map Type">
+            <option value="roadmap">🗺️ Google Roadmap (Streets)</option>
+            <option value="satellite">🛰️ Google Satellite</option>
+            <option value="hybrid">🛣️ Google Hybrid</option>
+            <option value="terrain">🏞️ Google Terrain</option>
+            <option value="dark">🌙 Dark Navigation</option>
+          </select>
+        </div>
+
+        <!-- Toggle Full Details Drawer -->
+        <button id="btn-toggle-details" class="btn-toggle-info" title="View Full Route Analytics & Segment Steps">
+          <span>📊 View Detailed Info</span>
+          <span class="badge-count" id="details-badge">3 Routes</span>
+        </button>
+
+        <button id="btn-results-recenter" class="btn-icon-nav" title="Center Delhi Map">🎯</button>
+      </div>
+
+    </header>
+
+    <!-- Main Map Workspace -->
+    <div class="results-map-container">
+      
+      <!-- Map Route Selector Pills -->
+      <div class="map-floating-tabs">
+        <button class="map-route-pill active" data-route="all">
+          <span class="dot all"></span> All 3 Paths
+        </button>
+        <button class="map-route-pill" data-route="fastest">
+          <span class="dot fastest"></span> ⚡ Fastest (<span id="pill-fastest-time">-- min</span>)
+        </button>
+        <button class="map-route-pill" data-route="eco">
+          <span class="dot eco"></span> 🌿 Eco-Friendly (<span id="pill-eco-time">-- min</span>)
+        </button>
+        <button class="map-route-pill" data-route="weather_safe">
+          <span class="dot weather"></span> 🛡️ Weather-Safe (<span id="pill-weather-time">-- min</span>)
+        </button>
+      </div>
+
+      <!-- Leaflet Map Container -->
+      <div id="results-map" class="map-canvas"></div>
+
+      <!-- Floating Bottom Quick-Telemetry Card -->
+      <div class="floating-quick-card" id="floating-quick-card">
+        <div class="quick-card-left">
+          <div class="quick-mode-header">
+            <span class="quick-title" id="quick-mode-title">⚡ Fastest Route Selected</span>
+            <span class="quick-badge" id="quick-mode-badge">Lowest Travel Time</span>
+          </div>
+          <div class="quick-metrics-row">
+            <div class="q-metric">
+              <span class="q-label">ETA</span>
+              <span class="q-val highlight" id="quick-eta">-- min</span>
+            </div>
+            <div class="q-metric">
+              <span class="q-label">Distance</span>
+              <span class="q-val" id="quick-dist">-- km</span>
+            </div>
+            <div class="q-metric">
+              <span class="q-label">Fuel / Energy</span>
+              <span class="q-val" id="quick-fuel">-- L</span>
+            </div>
+            <div class="q-metric">
+              <span class="q-label">Est. Cost</span>
+              <span class="q-val" id="quick-cost">₹--</span>
+            </div>
+            <div class="q-metric">
+              <span class="q-label">Safety Score</span>
+              <span class="q-val highlight-safe" id="quick-safety">--%</span>
+            </div>
           </div>
         </div>
 
-        <!-- Vehicle Profile Selection -->
-        <div class="panel-card">
-          <h2 class="section-title">
-            <span class="icon">🚘</span> Vehicle Powertrain Profile
-          </h2>
-          <div class="vehicle-grid" id="vehicle-selector-grid">
+        <button id="btn-quick-view-steps" class="btn-quick-action">
+          <span>See Turn-by-Turn</span> ➔
+        </button>
+      </div>
+
+      <!-- Weather Alert Banner on Map -->
+      <div id="results-weather-banner" class="results-weather-banner hidden">
+        <span class="banner-warn-icon">⚠️</span>
+        <span id="results-weather-banner-text">Weather hazard detected along path.</span>
+      </div>
+
+    </div>
+
+    <!-- =========================================================================
+         SLIDE-OVER ON-DEMAND DETAILS & ANALYTICS DRAWER
+         ========================================================================= -->
+    <div id="details-drawer" class="details-drawer hidden">
+      <div class="drawer-header">
+        <div>
+          <h3 class="drawer-title">Route Analytics & Turn-by-Turn Itinerary</h3>
+          <p class="drawer-subtitle">Comprehensive multi-criteria metrics generated by C++ Engine</p>
+        </div>
+        <button id="btn-close-drawer" class="btn-close-drawer" title="Close Drawer">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        
+        <!-- Comparison Summary Cards -->
+        <div class="drawer-section">
+          <h4 class="drawer-sec-title">All 3 Calculated Route Options</h4>
+          <div id="drawer-comparison-cards" class="drawer-cards-grid">
             <!-- Dynamically populated -->
           </div>
         </div>
 
-        <!-- Environmental & Temporal Simulation -->
-        <div class="panel-card">
-          <h2 class="section-title">
-            <span class="icon">🌦️</span> Context & Conditions
-          </h2>
-
-          <div class="form-group">
-            <label for="select-weather">Weather Condition</label>
-            <select id="select-weather" class="custom-select">
-              <option value="Clear">☀️ Clear Sky / Normal Dry</option>
-              <option value="Light_Rain">🌦️ Light Rain (Wet Road)</option>
-              <option value="Heavy_Rain">🌧️ Heavy Rain (Waterlogging Alerts)</option>
-              <option value="Dense_Fog">🌫️ Dense Fog / Smog (<200m Vis)</option>
-              <option value="Extreme_Heat">🔥 Extreme Heatwave (45°C+ AC Load)</option>
-              <option value="Storm">⛈️ Severe Thunderstorm / High Wind</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <div class="slider-header">
-              <label for="slider-hour">Departure Time</label>
-              <span class="slider-val" id="val-hour">09:00 AM (Peak Rush)</span>
-            </div>
-            <input type="range" id="slider-hour" min="0" max="23" value="9" class="custom-range">
-            <div class="slider-ticks">
-              <span>12 AM</span>
-              <span class="peak-label">8-11 AM (Rush)</span>
-              <span>2 PM</span>
-              <span class="peak-label">5-9 PM (Rush)</span>
-              <span>11 PM</span>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="select-day">Day of Week</label>
-            <select id="select-day" class="custom-select">
-              <option value="1">Tuesday (Typical Weekday Peak)</option>
-              <option value="0">Monday (Heavy Morning Rush)</option>
-              <option value="2">Wednesday (Weekday)</option>
-              <option value="3">Thursday (Weekday)</option>
-              <option value="4">Friday (Heavy Evening Weekend Rush)</option>
-              <option value="5">Saturday (Moderate Weekend Traffic)</option>
-              <option value="6">Sunday (Light Traffic)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Multi-Objective Preference Sliders -->
-        <div class="panel-card">
-          <div class="section-header-row">
-            <h2 class="section-title"><span class="icon">⚖️</span> Optimization Weights</h2>
-            <button id="btn-reset-weights" class="btn-text-action">Reset</button>
-          </div>
-
-          <div class="weight-control">
-            <div class="slider-header">
-              <span>⚡ Time Priority</span>
-              <span class="slider-val" id="val-w-time">50%</span>
-            </div>
-            <input type="range" id="slider-w-time" min="0" max="100" value="50" class="custom-range range-time">
-          </div>
-
-          <div class="weight-control">
-            <div class="slider-header">
-              <span>🌿 Fuel / Eco Priority</span>
-              <span class="slider-val" id="val-w-fuel">30%</span>
-            </div>
-            <input type="range" id="slider-w-fuel" min="0" max="100" value="30" class="custom-range range-fuel">
-          </div>
-
-          <div class="weight-control">
-            <div class="slider-header">
-              <span>🛡️ Weather Safety Priority</span>
-              <span class="slider-val" id="val-w-weather">20%</span>
-            </div>
-            <input type="range" id="slider-w-weather" min="0" max="100" value="20" class="custom-range range-weather">
-          </div>
-        </div>
-
-        <button id="btn-optimize" class="btn-primary-glow">
-          <span>🚀 Run Multi-Objective Optimization</span>
-        </button>
-
-      </aside>
-
-      <!-- Center: Interactive Map Container -->
-      <section class="map-section">
-        <div class="map-floating-header">
-          <div class="route-tab-pills" id="route-tab-pills">
-            <button class="pill-tab active" data-route-key="all">
-              <span class="dot all"></span> All 3 Paths
-            </button>
-            <button class="pill-tab" data-route-key="fastest">
-              <span class="dot fastest"></span> ⚡ Fastest
-            </button>
-            <button class="pill-tab" data-route-key="eco">
-              <span class="dot eco"></span> 🌿 Eco-Friendly
-            </button>
-            <button class="pill-tab" data-route-key="weather_safe">
-              <span class="dot weather"></span> 🛡️ Weather-Safe
-            </button>
-          </div>
-
-          <div class="map-actions">
-            <button id="btn-recenter" class="btn-map-control" title="Recenter Map on Delhi">
-              🎯 Center Delhi
-            </button>
-          </div>
-        </div>
-
-        <div id="leaflet-map" class="map-view"></div>
-
-        <!-- Weather alert banner on map bottom -->
-        <div id="map-weather-banner" class="map-weather-banner hidden">
-          <div class="banner-icon">⚠️</div>
-          <div class="banner-text" id="map-weather-banner-text">
-            Heavy Rain detected in Yamuna floodplain corridor. Weather-Safe route automatically diverted.
-          </div>
-        </div>
-      </section>
-
-      <!-- Right: Route Analytics, Comparison & Telemetry -->
-      <aside class="analytics-panel">
-        
-        <!-- Comparison Summary Cards -->
-        <div class="analytics-header">
-          <h2 class="panel-heading">Route Comparison Telemetry</h2>
-          <span class="engine-tag" id="engine-tag">⚡ C++ Dijkstra Engine</span>
-        </div>
-
-        <div id="comparison-cards-container" class="comparison-cards-list">
-          <div class="placeholder-card">
-            <p>Select origin and destination, then click <strong>Run Multi-Objective Optimization</strong> to compare real-time routes.</p>
-          </div>
-        </div>
-
-        <!-- Savings Highlight Card -->
-        <div id="savings-card" class="savings-card hidden">
-          <div class="savings-icon">💡</div>
-          <div class="savings-content">
-            <h4 class="savings-title">Eco & Safety Impact</h4>
-            <p class="savings-desc" id="savings-desc">Eco route reduces fuel consumption by 14.2% while bypassing high-congestion flood zones.</p>
-          </div>
+        <!-- Savings Highlight Box -->
+        <div id="drawer-savings-box" class="drawer-savings-box hidden">
+          <span class="savings-ico">💡</span>
+          <p id="drawer-savings-text">Eco route saves 15% fuel.</p>
         </div>
 
         <!-- Turn-by-Turn Segment Breakdown -->
-        <div class="panel-card steps-card">
-          <div class="section-header-row">
-            <h3 class="section-title"><span class="icon">🛣️</span> Route Segment Itinerary</h3>
-            <span class="badge-mini" id="selected-route-name">Fastest Path</span>
+        <div class="drawer-section">
+          <div class="section-title-row">
+            <h4 class="drawer-sec-title">Turn-by-Turn Segment Breakdown</h4>
+            <span class="drawer-badge-pill" id="drawer-active-route-label">Fastest Route</span>
           </div>
-
-          <div id="route-steps-list" class="steps-list">
-            <div class="empty-state">No route computed yet.</div>
-          </div>
-        </div>
-
-        <!-- Query History & SQLite Log -->
-        <div class="panel-card history-card">
-          <div class="section-header-row">
-            <h3 class="section-title"><span class="icon">🗄️</span> SQLite Optimization Log</h3>
-            <button id="btn-refresh-history" class="btn-text-action">Refresh</button>
-          </div>
-          <div id="history-items-list" class="history-list">
+          <div id="drawer-steps-list" class="drawer-steps-list">
             <!-- Dynamically populated -->
           </div>
         </div>
 
-      </aside>
+        <!-- SQLite History -->
+        <div class="drawer-section">
+          <div class="section-title-row">
+            <h4 class="drawer-sec-title">Recent Query Logs (SQLite)</h4>
+            <button id="btn-drawer-refresh-history" class="btn-text-link">Refresh</button>
+          </div>
+          <div id="drawer-history-list" class="drawer-history-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
 
-    </main>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         GOOGLE MAPS API KEY CONFIGURATION MODAL
+         ========================================================================= -->
+    <div id="gmaps-key-modal" class="gmaps-modal hidden">
+      <div class="gmaps-modal-card">
+        <div class="gmaps-modal-header">
+          <div class="brand-icon" style="background:#ea4335;">🗺️</div>
+          <div>
+            <h3 class="modal-title">Google Maps Platform Integration</h3>
+            <p class="modal-subtitle">Enable Native Google Maps, Real-Time Traffic & Street Navigation</p>
+          </div>
+          <button id="btn-close-gmaps-modal" class="btn-clear-x">✕</button>
+        </div>
+
+        <div class="gmaps-modal-body">
+          <p class="modal-desc">
+            Enter your <strong>Google Maps JavaScript API Key</strong> below to load official Google Maps road geometry, satellite imagery, and live traffic congestion directly in the dashboard:
+          </p>
+
+          <div class="form-group" style="margin-top:10px;">
+            <label for="input-gmaps-api-key" style="font-weight:700; color:#93c5fd;">Google Maps API Key</label>
+            <input type="text" id="input-gmaps-api-key" class="planner-text-input" style="background:var(--bg-input); padding:10px 14px; border:1px solid var(--border-color); border-radius:var(--radius-sm);" placeholder="AIzaSy..." autocomplete="off">
+          </div>
+
+          <div class="gmaps-tip-box">
+            <span>💡 <strong>Free Prototyping:</strong> You can get a free Google Maps API key or Maps Demo key at <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" style="color:#38bdf8;">console.cloud.google.com</a>. (If no key is entered, the system uses high-definition road routing tiles automatically).</span>
+          </div>
+        </div>
+
+        <div class="gmaps-modal-footer">
+          <button id="btn-save-gmaps-key" class="btn-find-routes-glow" style="padding:10px 20px; font-size:0.85rem;">
+            <span>Save & Activate Google Maps</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawer Backdrop Overlay -->
+    <div id="drawer-backdrop" class="drawer-backdrop hidden"></div>
 
   </div>
 

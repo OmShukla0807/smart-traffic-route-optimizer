@@ -16,6 +16,7 @@ if BASE_DIR not in sys.path:
 
 from backend.app.core.feature_mapper import EdgeWeightEngine
 from backend.app.core.cpp_bridge import CppDijkstraBridge
+from backend.app.core.geometry import RoadGeometryEngine
 
 # Fuel cost presets (INR per unit) & CO2 emissions (kg per unit)
 EMISSION_FACTORS = {
@@ -30,6 +31,7 @@ class MultiObjectiveRouter:
     def __init__(self):
         self.edge_engine = EdgeWeightEngine()
         self.cpp_bridge = CppDijkstraBridge()
+        self.geom_engine = RoadGeometryEngine()
         
         # Load nodes
         nodes_path = os.path.join(BASE_DIR, "data", "processed", "nodes.csv")
@@ -92,12 +94,6 @@ class MultiObjectiveRouter:
             total_hazard_penalty += hazard
 
             to_node = self.node_lookup[r["to_node"]]
-            path_coords.append({
-                "node_id": r["to_node"],
-                "name": to_node["node_name"],
-                "lat": float(to_node["latitude"]),
-                "lng": float(to_node["longitude"])
-            })
 
             # Check weather advisory
             if hazard > 15.0:
@@ -117,6 +113,21 @@ class MultiObjectiveRouter:
                 "speed_limit_kmh": int(r["base_speed_limit_kmh"]),
                 "traffic_density_index": round(float(r.get("traffic_density_index", 5.0)), 1)
             })
+
+        # Fetch high-precision curved road coordinates following actual highways and curves
+        exact_curve_coords = self.geom_engine.get_full_route_geometry(edge_ids, road_dict)
+        if exact_curve_coords:
+            path_coords = exact_curve_coords
+        else:
+            # Fallback to straight node connections
+            start_node_id = self.idx_to_node_id[node_indices[0]]
+            start_node = self.node_lookup[start_node_id]
+            path_coords = [{"lat": float(start_node["latitude"]), "lng": float(start_node["longitude"])}]
+            for r_id in edge_ids:
+                r = road_dict.get(r_id)
+                if r:
+                    to_node = self.node_lookup[r["to_node"]]
+                    path_coords.append({"lat": float(to_node["latitude"]), "lng": float(to_node["longitude"])})
 
         # Calculate emissions & cost
         unit_info = EMISSION_FACTORS.get(vehicle_type, EMISSION_FACTORS["Petrol_Sedan"])
