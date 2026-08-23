@@ -71,41 +71,39 @@ def init_db():
 
     conn.commit()
 
-    # Check if nodes exist, populate from CSV if empty
-    cursor.execute("SELECT COUNT(*) as cnt FROM nodes")
-    if cursor.fetchone()["cnt"] == 0:
-        nodes_csv = os.path.join(BASE_DIR, "data", "processed", "nodes.csv")
-        if os.path.exists(nodes_csv):
-            df_nodes = pd.read_csv(nodes_csv)
-            for _, row in df_nodes.iterrows():
-                cursor.execute(
-                    "INSERT INTO nodes (node_id, node_name, latitude, longitude, zone) VALUES (?, ?, ?, ?, ?)",
-                    (row["node_id"], row["node_name"], row["latitude"], row["longitude"], row["zone"])
-                )
-            conn.commit()
-            print(f"Populated {len(df_nodes)} nodes into SQLite database.")
+    # Populate/Update nodes from CSV
+    nodes_csv = os.path.join(BASE_DIR, "data", "processed", "nodes.csv")
+    if os.path.exists(nodes_csv):
+        cursor.execute("DELETE FROM nodes")
+        df_nodes = pd.read_csv(nodes_csv)
+        for _, row in df_nodes.iterrows():
+            cursor.execute(
+                "INSERT OR REPLACE INTO nodes (node_id, node_name, latitude, longitude, zone) VALUES (?, ?, ?, ?, ?)",
+                (row["node_id"], row["node_name"], row["latitude"], row["longitude"], row["zone"])
+            )
+        conn.commit()
+        print(f"Populated {len(df_nodes)} nodes into SQLite database.")
 
-    # Check if roads exist, populate from CSV if empty
-    cursor.execute("SELECT COUNT(*) as cnt FROM roads")
-    if cursor.fetchone()["cnt"] == 0:
-        roads_csv = os.path.join(BASE_DIR, "data", "processed", "roads.csv")
-        if os.path.exists(roads_csv):
-            df_roads = pd.read_csv(roads_csv)
-            for _, row in df_roads.iterrows():
-                cursor.execute(
-                    """INSERT INTO roads (
-                        road_id, from_node, to_node, road_name, road_type, 
-                        distance_km, base_speed_limit_kmh, road_gradient_percent, 
-                        lanes, flood_risk_score, fog_risk_score
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        row["road_id"], row["from_node"], row["to_node"], row["road_name"], row["road_type"],
-                        row["distance_km"], row["base_speed_limit_kmh"], row["road_gradient_percent"],
-                        row["lanes"], row["flood_risk_score"], row["fog_risk_score"]
-                    )
+    # Populate/Update roads from CSV
+    roads_csv = os.path.join(BASE_DIR, "data", "processed", "roads.csv")
+    if os.path.exists(roads_csv):
+        cursor.execute("DELETE FROM roads")
+        df_roads = pd.read_csv(roads_csv)
+        for _, row in df_roads.iterrows():
+            cursor.execute(
+                """INSERT OR REPLACE INTO roads (
+                    road_id, from_node, to_node, road_name, road_type, 
+                    distance_km, base_speed_limit_kmh, road_gradient_percent, 
+                    lanes, flood_risk_score, fog_risk_score
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    row["road_id"], row["from_node"], row["to_node"], row["road_name"], row["road_type"],
+                    row["distance_km"], row["base_speed_limit_kmh"], row["road_gradient_percent"],
+                    row["lanes"], row["flood_risk_score"], row["fog_risk_score"]
                 )
-            conn.commit()
-            print(f"Populated {len(df_roads)} roads into SQLite database.")
+            )
+        conn.commit()
+        print(f"Populated {len(df_roads)} roads into SQLite database.")
 
     conn.close()
 
