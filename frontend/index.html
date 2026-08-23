@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Traffic & Route Optimizer | Multi-Objective AI + C++ Dijkstra</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    
+    <!-- Top Navbar -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Smart Traffic Route Optimizer</h1>
+          <p class="brand-subtitle">Multi-Objective Routing • Time • Fuel • Weather • C++ Dijkstra</p>
+        </div>
+      </div>
+
+      <div class="nav-telemetry">
+        <div class="status-badge live">
+          <span class="pulse-dot"></span>
+          <span>ML Gradient Boosting (R²=0.99)</span>
+        </div>
+        <div class="status-badge cpp">
+          <span class="badge-icon">⚡</span>
+          <span>C++ Dijkstra Engine</span>
+        </div>
+        <div class="status-badge weather" id="nav-weather-badge">
+          <span id="nav-weather-icon">☀️</span>
+          <span id="nav-weather-text">Clear Sky</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="main-content">
+      
+      <!-- Left Sidebar: Controls & Parameters -->
+      <aside class="sidebar-panel">
+        <div class="panel-card">
+          <h2 class="section-title">
+            <span class="icon">📍</span> Journey Endpoints
+          </h2>
+          
+          <div class="form-group">
+            <label for="select-source">Origin / Start Location</label>
+            <select id="select-source" class="custom-select">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+
+          <div class="swap-button-container">
+            <button id="btn-swap-nodes" class="btn-icon" title="Swap Origin and Destination">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+                <polyline points="17 14 12 9 7 14"></polyline>
+                <line x1="12" y1="9" x2="12" y2="21"></line>
+              </svg>
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label for="select-destination">Destination</label>
+            <select id="select-destination" class="custom-select">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Vehicle Profile Selection -->
+        <div class="panel-card">
+          <h2 class="section-title">
+            <span class="icon">🚘</span> Vehicle Powertrain Profile
+          </h2>
+          <div class="vehicle-grid" id="vehicle-selector-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Environmental & Temporal Simulation -->
+        <div class="panel-card">
+          <h2 class="section-title">
+            <span class="icon">🌦️</span> Context & Conditions
+          </h2>
+
+          <div class="form-group">
+            <label for="select-weather">Weather Condition</label>
+            <select id="select-weather" class="custom-select">
+              <option value="Clear">☀️ Clear Sky / Normal Dry</option>
+              <option value="Light_Rain">🌦️ Light Rain (Wet Road)</option>
+              <option value="Heavy_Rain">🌧️ Heavy Rain (Waterlogging Alerts)</option>
+              <option value="Dense_Fog">🌫️ Dense Fog / Smog (<200m Vis)</option>
+              <option value="Extreme_Heat">🔥 Extreme Heatwave (45°C+ AC Load)</option>
+              <option value="Storm">⛈️ Severe Thunderstorm / High Wind</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <div class="slider-header">
+              <label for="slider-hour">Departure Time</label>
+              <span class="slider-val" id="val-hour">09:00 AM (Peak Rush)</span>
+            </div>
+            <input type="range" id="slider-hour" min="0" max="23" value="9" class="custom-range">
+            <div class="slider-ticks">
+              <span>12 AM</span>
+              <span class="peak-label">8-11 AM (Rush)</span>
+              <span>2 PM</span>
+              <span class="peak-label">5-9 PM (Rush)</span>
+              <span>11 PM</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="select-day">Day of Week</label>
+            <select id="select-day" class="custom-select">
+              <option value="1">Tuesday (Typical Weekday Peak)</option>
+              <option value="0">Monday (Heavy Morning Rush)</option>
+              <option value="2">Wednesday (Weekday)</option>
+              <option value="3">Thursday (Weekday)</option>
+              <option value="4">Friday (Heavy Evening Weekend Rush)</option>
+              <option value="5">Saturday (Moderate Weekend Traffic)</option>
+              <option value="6">Sunday (Light Traffic)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Multi-Objective Preference Sliders -->
+        <div class="panel-card">
+          <div class="section-header-row">
+            <h2 class="section-title"><span class="icon">⚖️</span> Optimization Weights</h2>
+            <button id="btn-reset-weights" class="btn-text-action">Reset</button>
+          </div>
+
+          <div class="weight-control">
+            <div class="slider-header">
+              <span>⚡ Time Priority</span>
+              <span class="slider-val" id="val-w-time">50%</span>
+            </div>
+            <input type="range" id="slider-w-time" min="0" max="100" value="50" class="custom-range range-time">
+          </div>
+
+          <div class="weight-control">
+            <div class="slider-header">
+              <span>🌿 Fuel / Eco Priority</span>
+              <span class="slider-val" id="val-w-fuel">30%</span>
+            </div>
+            <input type="range" id="slider-w-fuel" min="0" max="100" value="30" class="custom-range range-fuel">
+          </div>
+
+          <div class="weight-control">
+            <div class="slider-header">
+              <span>🛡️ Weather Safety Priority</span>
+              <span class="slider-val" id="val-w-weather">20%</span>
+            </div>
+            <input type="range" id="slider-w-weather" min="0" max="100" value="20" class="custom-range range-weather">
+          </div>
+        </div>
+
+        <button id="btn-optimize" class="btn-primary-glow">
+          <span>🚀 Run Multi-Objective Optimization</span>
+        </button>
+
+      </aside>
+
+      <!-- Center: Interactive Map Container -->
+      <section class="map-section">
+        <div class="map-floating-header">
+          <div class="route-tab-pills" id="route-tab-pills">
+            <button class="pill-tab active" data-route-key="all">
+              <span class="dot all"></span> All 3 Paths
+            </button>
+            <button class="pill-tab" data-route-key="fastest">
+              <span class="dot fastest"></span> ⚡ Fastest
+            </button>
+            <button class="pill-tab" data-route-key="eco">
+              <span class="dot eco"></span> 🌿 Eco-Friendly
+            </button>
+            <button class="pill-tab" data-route-key="weather_safe">
+              <span class="dot weather"></span> 🛡️ Weather-Safe
+            </button>
+          </div>
+
+          <div class="map-actions">
+            <button id="btn-recenter" class="btn-map-control" title="Recenter Map on Delhi">
+              🎯 Center Delhi
+            </button>
+          </div>
+        </div>
+
+        <div id="leaflet-map" class="map-view"></div>
+
+        <!-- Weather alert banner on map bottom -->
+        <div id="map-weather-banner" class="map-weather-banner hidden">
+          <div class="banner-icon">⚠️</div>
+          <div class="banner-text" id="map-weather-banner-text">
+            Heavy Rain detected in Yamuna floodplain corridor. Weather-Safe route automatically diverted.
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Route Analytics, Comparison & Telemetry -->
+      <aside class="analytics-panel">
+        
+        <!-- Comparison Summary Cards -->
+        <div class="analytics-header">
+          <h2 class="panel-heading">Route Comparison Telemetry</h2>
+          <span class="engine-tag" id="engine-tag">⚡ C++ Dijkstra Engine</span>
+        </div>
+
+        <div id="comparison-cards-container" class="comparison-cards-list">
+          <div class="placeholder-card">
+            <p>Select origin and destination, then click <strong>Run Multi-Objective Optimization</strong> to compare real-time routes.</p>
+          </div>
+        </div>
+
+        <!-- Savings Highlight Card -->
+        <div id="savings-card" class="savings-card hidden">
+          <div class="savings-icon">💡</div>
+          <div class="savings-content">
+            <h4 class="savings-title">Eco & Safety Impact</h4>
+            <p class="savings-desc" id="savings-desc">Eco route reduces fuel consumption by 14.2% while bypassing high-congestion flood zones.</p>
+          </div>
+        </div>
+
+        <!-- Turn-by-Turn Segment Breakdown -->
+        <div class="panel-card steps-card">
+          <div class="section-header-row">
+            <h3 class="section-title"><span class="icon">🛣️</span> Route Segment Itinerary</h3>
+            <span class="badge-mini" id="selected-route-name">Fastest Path</span>
+          </div>
+
+          <div id="route-steps-list" class="steps-list">
+            <div class="empty-state">No route computed yet.</div>
+          </div>
+        </div>
+
+        <!-- Query History & SQLite Log -->
+        <div class="panel-card history-card">
+          <div class="section-header-row">
+            <h3 class="section-title"><span class="icon">🗄️</span> SQLite Optimization Log</h3>
+            <button id="btn-refresh-history" class="btn-text-action">Refresh</button>
+          </div>
+          <div id="history-items-list" class="history-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+      </aside>
+
+    </main>
+
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Custom App JS -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
