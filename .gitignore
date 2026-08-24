@@ -219,11 +219,18 @@ __marimo__/
 
 
 # Project data
+# Raw datasets
 data/raw/*
 !data/raw/.gitkeep
 
+# Processed datasets
 data/processed/*
 !data/processed/.gitkeep
+
+# Keep selected small processed files in Git
+!data/processed/nodes.csv
+!data/processed/segments.csv
+!data/processed/traffic_sample.csv
 
 # Trained ML models
 *.joblib
