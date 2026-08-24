@@ -1,47 +1,41 @@
 /**
- * Smart Traffic Route Optimizer - Multi-Page Client Application
- * Page 1: Dedicated Journey Planner & Endpoint Entry
- * Page 2: Clean Map & Route Navigation View with On-Demand Drawer
- * Integrated with Google Maps Platform & Real-Time Traffic
+ * Smart Traffic Route Optimizer - Client Application
+ * Next-Gen Cyber-Cockpit, Multi-Objective Routing (Fastest, Eco, Clean Air AQI, Weather-Safe),
+ * Live Incident Simulator, & Interactive Slide Deck Controller
  */
 
 const API_BASE = window.location.origin;
-const GMAPS_KEY_STORAGE = "smart_traffic_gmaps_key";
 
-// Application State
+// Global Application State
 let appState = {
   currentView: "planner", // "planner" or "results"
   nodes: [],
   roads: [],
   vehicles: [],
+  weatherPresets: [],
   selectedSource: "NODE_CP",
   selectedDestination: "NODE_CYBER",
   selectedVehicle: "Petrol_Sedan",
   weatherCondition: "Clear",
   hourOfDay: 9,
   dayOfWeek: 1,
-  activeRouteKey: "fastest", // "fastest", "eco", "weather_safe", "all"
+  customWeights: { time: 0.25, fuel: 0.25, aqi: 0.25, weather: 0.25 },
+  useCustomWeights: false,
+  activeRouteKey: "fastest", // "fastest", "eco", "clean_air", "weather_safe", "all"
   lastResult: null,
-  currentMapLayer: "roadmap"
+  currentMapLayer: "roadmap",
+  currentSlide: 1,
+  totalSlides: 8
 };
 
-// Map Objects (Leaflet)
+// Leaflet Map State
 let leafletMap = null;
 let currentTileLayer = null;
-let trafficTileLayer = null;
 let nodeMarkersLayer = null;
 let routePolylinesLayer = null;
-let routeLayers = { fastest: null, eco: null, weather_safe: null };
-let isTrafficActive = true;
+let routeLayers = { fastest: null, eco: null, clean_air: null, weather_safe: null };
 
-// Google Maps Native Objects
-let googleMap = null;
-let googleTrafficLayer = null;
-let googlePolylines = { fastest: null, eco: null, weather_safe: null };
-let googleMarkers = [];
-let isGoogleMapsLoaded = false;
-
-// Tile Providers for Google Maps & Leaflet
+// Tile Providers for Leaflet & Google Tiles
 const MAP_TILE_PROVIDERS = {
   roadmap: {
     url: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
@@ -65,73 +59,45 @@ const MAP_TILE_PROVIDERS = {
   }
 };
 
-const ROUTE_COLORS = {
-  fastest: { color: "#00e5ff", weight: 6, opacity: 0.95 },
-  eco: { color: "#10b981", weight: 5, opacity: 0.9 },
-  weather_safe: { color: "#f59e0b", weight: 5, opacity: 0.9 }
+const ROUTE_STYLES = {
+  fastest: { color: "#00f0ff", weight: 6, opacity: 0.95, dashArray: null },
+  eco: { color: "#10b981", weight: 5, opacity: 0.9, dashArray: "8, 6" },
+  clean_air: { color: "#a855f7", weight: 5, opacity: 0.9, dashArray: "6, 4" },
+  weather_safe: { color: "#f59e0b", weight: 5, opacity: 0.9, dashArray: "4, 6" }
 };
 
 // -------------------------------------------------------------
-// Initialization
+// DOM Ready Initialization
 // -------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", async () => {
   setupPlannerEventListeners();
   setupResultsEventListeners();
-  setupGoogleMapsModalListeners();
+  setupIncidentModalListeners();
+  setupPresentationDeckListeners();
   
-  // Try loading saved Google Maps API Key if present
-  const savedKey = localStorage.getItem(GMAPS_KEY_STORAGE);
-  if (savedKey) {
-    const inputKey = document.getElementById("input-gmaps-api-key");
-    if (inputKey) inputKey.value = savedKey;
-    initGoogleMapsSdk(savedKey).catch(e => console.log("Google Maps SDK load fallback to tile renderer:", e));
-  }
-
-  await loadInitialData();
+  await loadInitialMetadata();
 });
 
 // -------------------------------------------------------------
-// Google Maps SDK Loader
+// Metadata Loader
 // -------------------------------------------------------------
-function initGoogleMapsSdk(apiKey) {
-  return new Promise((resolve, reject) => {
-    if (window.google && window.google.maps) {
-      isGoogleMapsLoaded = true;
-      resolve(window.google.maps);
-      return;
-    }
-    if (!apiKey) {
-      reject(new Error("No Google Maps API Key"));
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=geometry,places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      isGoogleMapsLoaded = true;
-      resolve(window.google.maps);
-    };
-    script.onerror = (err) => reject(err);
-    document.head.appendChild(script);
-  });
-}
-
-// -------------------------------------------------------------
-// Load Metadata from Backend
-// -------------------------------------------------------------
-async function loadInitialData() {
+async function loadInitialMetadata() {
   try {
-    const [nodesRes, vehiclesRes] = await Promise.all([
+    const [nodesRes, roadsRes, vehiclesRes, weatherRes] = await Promise.all([
       fetch(`${API_BASE}/api/nodes`).then(r => r.json()),
-      fetch(`${API_BASE}/api/vehicles`).then(r => r.json())
+      fetch(`${API_BASE}/api/roads`).then(r => r.json()),
+      fetch(`${API_BASE}/api/vehicles`).then(r => r.json()),
+      fetch(`${API_BASE}/api/weather-presets`).then(r => r.json())
     ]);
 
     appState.nodes = nodesRes.nodes || [];
+    appState.roads = roadsRes.roads || [];
     appState.vehicles = vehiclesRes.vehicles || [];
+    appState.weatherPresets = weatherRes.conditions || [];
 
     updatePlannerInputs();
     renderPlannerVehicles();
+    populateIncidentRoadDropdown();
   } catch (err) {
     console.error("Error loading initial metadata:", err);
   }
@@ -148,209 +114,199 @@ function updatePlannerInputs() {
   const inputSrc = document.getElementById("planner-search-source");
   const inputDst = document.getElementById("planner-search-dest");
 
-  if (srcNode && inputSrc) inputSrc.value = `${srcNode.node_name} (${srcNode.zone})`;
-  if (dstNode && inputDst) inputDst.value = `${dstNode.node_name} (${dstNode.zone})`;
+  if (inputSrc && srcNode) {
+    inputSrc.value = `${srcNode.node_name} (${srcNode.zone})`;
+  }
+  if (inputDst && dstNode) {
+    inputDst.value = `${dstNode.node_name} (${dstNode.zone})`;
+  }
 }
 
 function renderPlannerVehicles() {
   const container = document.getElementById("planner-vehicle-grid");
-  if (!container) return;
-  container.innerHTML = "";
+  if (!container || !appState.vehicles) return;
 
+  container.innerHTML = "";
   appState.vehicles.forEach(v => {
-    const btn = document.createElement("button");
-    btn.className = `veh-pill-btn ${v.id === appState.selectedVehicle ? "active" : ""}`;
-    btn.dataset.vehId = v.id;
-    btn.innerHTML = `
-      <span class="veh-pill-icon">${v.icon}</span>
-      <span class="veh-pill-name">${v.name.split(" (")[0]}</span>
+    const card = document.createElement("div");
+    card.className = `vehicle-card ${appState.selectedVehicle === v.id ? "active" : ""}`;
+    card.dataset.id = v.id;
+    card.innerHTML = `
+      <span class="v-icon">${v.icon}</span>
+      <div class="v-details">
+        <span class="v-name">${v.name.split(" (")[0]}</span>
+        <span class="v-fuel-tag">${v.fuel_type} • ${v.base_rate}</span>
+      </div>
+      <div class="v-check">✓</div>
     `;
 
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".veh-pill-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
+    card.addEventListener("click", () => {
+      document.querySelectorAll(".vehicle-card").forEach(c => c.classList.remove("active"));
+      card.classList.add("active");
       appState.selectedVehicle = v.id;
     });
 
-    container.appendChild(btn);
+    container.appendChild(card);
+  });
+}
+
+function populateIncidentRoadDropdown() {
+  const select = document.getElementById("incident-road-select");
+  if (!select || !appState.roads) return;
+
+  select.innerHTML = "";
+  appState.roads.forEach(r => {
+    const opt = document.createElement("option");
+    opt.value = r.road_id;
+    opt.textContent = `[${r.road_id}] ${r.road_name} (${r.from_node} ➔ ${r.to_node}, ${r.distance_km}km, AQI:${r.aqi_index})`;
+    select.appendChild(opt);
   });
 }
 
 // -------------------------------------------------------------
-// Autocomplete Search Logic for Page 1
+// Planner Event Listeners
 // -------------------------------------------------------------
-function setupSearchDropdown(inputId, dropdownId, onSelect) {
-  const input = document.getElementById(inputId);
-  const dropdown = document.getElementById(dropdownId);
-  if (!input || !dropdown) return;
+function setupPlannerEventListeners() {
+  // Autocomplete search for origin & destination
+  const setupAutocomplete = (inputId, dropdownId, stateKey) => {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    if (!input || !dropdown) return;
 
-  const performSearch = () => {
-    const q = input.value.trim().toLowerCase();
-    const matches = q
-      ? appState.nodes.filter(n => n.node_name.toLowerCase().includes(q) || n.zone.toLowerCase().includes(q) || n.node_id.toLowerCase().includes(q))
-      : appState.nodes;
+    input.addEventListener("focus", () => showDropdown(input, dropdown, stateKey));
+    input.addEventListener("input", () => showDropdown(input, dropdown, stateKey));
 
-    renderDropdownItems(matches, dropdown, onSelect, q);
+    document.addEventListener("click", (e) => {
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add("hidden");
+      }
+    });
+  };
+
+  const showDropdown = (input, dropdown, stateKey) => {
+    const query = input.value.toLowerCase().trim();
+    dropdown.innerHTML = "";
+
+    const filtered = appState.nodes.filter(n => 
+      n.node_name.toLowerCase().includes(query) ||
+      n.zone.toLowerCase().includes(query) ||
+      (n.landmark && n.landmark.toLowerCase().includes(query))
+    );
+
+    if (filtered.length === 0) {
+      dropdown.innerHTML = `<div class="dropdown-item empty">No transit hubs found</div>`;
+    } else {
+      filtered.forEach(node => {
+        const item = document.createElement("div");
+        item.className = "dropdown-item";
+        item.innerHTML = `
+          <span class="hub-name">${node.node_name}</span>
+          <span class="hub-zone">${node.zone} • ${node.landmark || 'Metro Hub'}</span>
+        `;
+        item.addEventListener("click", () => {
+          appState[stateKey] = node.node_id;
+          input.value = `${node.node_name} (${node.zone})`;
+          dropdown.classList.add("hidden");
+        });
+        dropdown.appendChild(item);
+      });
+    }
     dropdown.classList.remove("hidden");
   };
 
-  input.addEventListener("input", performSearch);
-  
-  input.addEventListener("focus", () => {
-    input.select();
-    performSearch();
+  setupAutocomplete("planner-search-source", "planner-src-dropdown", "selectedSource");
+  setupAutocomplete("planner-search-dest", "planner-dst-dropdown", "selectedDestination");
+
+  // Clear buttons
+  document.getElementById("btn-planner-clear-src")?.addEventListener("click", () => {
+    const input = document.getElementById("planner-search-source");
+    if (input) { input.value = ""; input.focus(); }
   });
-  
-  input.addEventListener("click", performSearch);
-
-  document.addEventListener("click", e => {
-    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-      dropdown.classList.add("hidden");
-    }
+  document.getElementById("btn-planner-clear-dst")?.addEventListener("click", () => {
+    const input = document.getElementById("planner-search-dest");
+    if (input) { input.value = ""; input.focus(); }
   });
-}
 
-function renderDropdownItems(items, dropdown, onSelect, query) {
-  dropdown.innerHTML = "";
-  if (items.length === 0) {
-    dropdown.innerHTML = `<div style="padding:10px; color:#6b7280; font-size:0.75rem; text-align:center;">No matching locations found.</div>`;
-    return;
-  }
+  // Swap endpoints
+  document.getElementById("btn-planner-swap")?.addEventListener("click", () => {
+    const temp = appState.selectedSource;
+    appState.selectedSource = appState.selectedDestination;
+    appState.selectedDestination = temp;
+    updatePlannerInputs();
+  });
 
-  items.slice(0, 10).forEach(node => {
-    const div = document.createElement("div");
-    div.className = "search-item";
-    
-    let titleHtml = node.node_name;
-    if (query) {
-      const idx = titleHtml.toLowerCase().indexOf(query);
-      if (idx !== -1) {
-        titleHtml = titleHtml.substring(0, idx) + 
-          `<span class="search-item-match">${titleHtml.substring(idx, idx + query.length)}</span>` + 
-          titleHtml.substring(idx + query.length);
-      }
-    }
-
-    div.innerHTML = `
-      <span class="search-item-title">${titleHtml}</span>
-      <span class="search-item-zone">${node.zone} • ${node.node_id}</span>
-    `;
-
-    div.addEventListener("click", () => {
-      onSelect(node);
-      dropdown.classList.add("hidden");
+  // Popular Trip Quick Chips
+  document.querySelectorAll(".chip-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      appState.selectedSource = btn.dataset.src;
+      appState.selectedDestination = btn.dataset.dst;
+      updatePlannerInputs();
     });
+  });
 
-    dropdown.appendChild(div);
+  // Departure Time Slider
+  const hourSlider = document.getElementById("planner-hour-slider");
+  const timeDisplay = document.getElementById("planner-time-display");
+  if (hourSlider && timeDisplay) {
+    hourSlider.addEventListener("input", (e) => {
+      const h = parseInt(e.target.value, 10);
+      appState.hourOfDay = h;
+      
+      const period = h >= 12 ? "PM" : "AM";
+      const displayHour = h % 12 === 0 ? 12 : h % 12;
+      const formatted = `${String(displayHour).padStart(2, "0")}:00 ${period}`;
+      
+      let rushTag = "";
+      if ((h >= 8 && h <= 11) || (h >= 17 && h <= 21)) {
+        rushTag = " (Peak Rush Hour)";
+      } else if (h >= 0 && h <= 5) {
+        rushTag = " (Off-Peak Night)";
+      }
+      timeDisplay.textContent = `${formatted}${rushTag}`;
+    });
+  }
+
+  // Weather selector
+  const weatherSelect = document.getElementById("planner-weather-select");
+  const hazardPill = document.getElementById("weather-hazard-alert");
+  const hazardDesc = document.getElementById("weather-hazard-desc");
+  if (weatherSelect) {
+    weatherSelect.addEventListener("change", (e) => {
+      appState.weatherCondition = e.target.value;
+      const preset = appState.weatherPresets.find(p => p.id === e.target.value);
+      if (preset && hazardPill && hazardDesc) {
+        hazardDesc.textContent = preset.description;
+        hazardPill.className = `weather-mini-pill ${preset.hazard_level === 'Critical' ? 'alert' : preset.hazard_level === 'High' ? 'alert' : preset.hazard_level === 'Moderate' ? 'warn' : 'clear'}`;
+      }
+    });
+  }
+
+  // Submit Run AI Button
+  document.getElementById("btn-find-routes")?.addEventListener("click", () => {
+    executeRouteCalculation();
   });
 }
 
 // -------------------------------------------------------------
-// View Switching Logic (Planner <-> Results)
+// Route Optimization Request & Results Renderer
 // -------------------------------------------------------------
-function switchView(viewName) {
-  appState.currentView = viewName;
-
-  const viewPlanner = document.getElementById("view-planner");
-  const viewResults = document.getElementById("view-results");
-
-  if (viewName === "planner") {
-    viewResults.classList.remove("active");
-    viewPlanner.classList.add("active");
-  } else {
-    viewPlanner.classList.remove("active");
-    viewResults.classList.add("active");
-
-    if (!leafletMap) {
-      initResultsMap();
-    } else {
-      setTimeout(() => leafletMap.invalidateSize(), 150);
-    }
-  }
-}
-
-function initResultsMap() {
-  const container = document.getElementById("results-map");
-  if (!container) return;
-
-  leafletMap = L.map("results-map", { zoomControl: false }).setView([28.5800, 77.2000], 11);
-
-  // Default to Google Roadmap
-  const provider = MAP_TILE_PROVIDERS[appState.currentMapLayer] || MAP_TILE_PROVIDERS.roadmap;
-  currentTileLayer = L.tileLayer(provider.url, provider.options).addTo(leafletMap);
-
-  // Google Live Traffic Layer (lyrs=h,traffic or mt1 overlay)
-  trafficTileLayer = L.tileLayer("https://mt1.google.com/vt?lyrs=h,traffic&x={x}&y={y}&z={z}", {
-    opacity: 0.9,
-    maxZoom: 20
-  }).addTo(leafletMap);
-
-  L.control.zoom({ position: "bottomright" }).addTo(leafletMap);
-
-  nodeMarkersLayer = L.layerGroup().addTo(leafletMap);
-  routePolylinesLayer = L.layerGroup().addTo(leafletMap);
-}
-
-function changeMapTileLayer(providerKey) {
-  appState.currentMapLayer = providerKey;
-  if (!leafletMap) return;
-  const provider = MAP_TILE_PROVIDERS[providerKey] || MAP_TILE_PROVIDERS.roadmap;
-  if (currentTileLayer) {
-    leafletMap.removeLayer(currentTileLayer);
-  }
-  currentTileLayer = L.tileLayer(provider.url, provider.options).addTo(leafletMap);
-
-  if (trafficTileLayer && isTrafficActive) {
-    leafletMap.removeLayer(trafficTileLayer);
-    trafficTileLayer.addTo(leafletMap);
-  }
-
-  if (routePolylinesLayer) routePolylinesLayer.bringToFront();
-}
-
-function toggleTrafficLayer() {
-  isTrafficActive = !isTrafficActive;
-  const btn = document.getElementById("btn-toggle-traffic");
-
-  if (trafficTileLayer && leafletMap) {
-    if (isTrafficActive) {
-      trafficTileLayer.addTo(leafletMap);
-      if (btn) {
-        btn.classList.add("active");
-        btn.classList.remove("off");
-        btn.innerHTML = "<span>🚦 Traffic: ON</span>";
-      }
-    } else {
-      leafletMap.removeLayer(trafficTileLayer);
-      if (btn) {
-        btn.classList.remove("active");
-        btn.classList.add("off");
-        btn.innerHTML = "<span>🚦 Traffic: OFF</span>";
-      }
-    }
-  }
-}
-
-// -------------------------------------------------------------
-// Run Route Optimization
-// -------------------------------------------------------------
-async function executeRouteOptimization() {
+async function executeRouteCalculation() {
   if (appState.selectedSource === appState.selectedDestination) {
-    alert("Origin and Destination cannot be the same. Please choose different locations.");
+    alert("Please choose different starting and destination locations.");
     return;
   }
 
   const btn = document.getElementById("btn-find-routes");
-  btn.innerHTML = `<span>⏳ Optimizing via Google Roads & ML...</span>`;
-  btn.disabled = true;
+  if (btn) btn.disabled = true;
 
   const payload = {
     source_id: appState.selectedSource,
     destination_id: appState.selectedDestination,
-    hour_of_day: parseInt(appState.hourOfDay),
-    day_of_week: parseInt(appState.dayOfWeek),
+    hour_of_day: appState.hourOfDay,
+    day_of_week: appState.dayOfWeek,
     weather_condition: appState.weatherCondition,
-    vehicle_type: appState.selectedVehicle
+    vehicle_type: appState.selectedVehicle,
+    custom_weights: appState.useCustomWeights ? appState.customWeights : null
   };
 
   try {
@@ -360,542 +316,543 @@ async function executeRouteOptimization() {
       body: JSON.stringify(payload)
     });
 
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Failed to calculate route.");
+    }
+
     const data = await res.json();
-    if (data.status === "success") {
-      appState.lastResult = data;
-      
-      // Switch view to Results
-      switchView("results");
-      
-      // Update Results Header
-      const srcNode = getNodeById(appState.selectedSource);
-      const dstNode = getNodeById(appState.selectedDestination);
-      const vehObj = appState.vehicles.find(v => v.id === appState.selectedVehicle) || { icon: "🚗", name: "Petrol Sedan" };
+    appState.lastResult = data;
 
-      document.getElementById("res-start-name").textContent = srcNode?.node_name.split(" (")[0] || "Origin";
-      document.getElementById("res-end-name").textContent = dstNode?.node_name.split(" (")[0] || "Destination";
-      
-      const hDisplay = appState.hourOfDay >= 12 ? `${appState.hourOfDay % 12 || 12}:00 PM` : `${appState.hourOfDay}:00 AM`;
-      document.getElementById("res-trip-meta").textContent = `${vehObj.icon} ${vehObj.name.split(" (")[0]} • ${appState.weatherCondition} • ${hDisplay}`;
+    // Switch View to Results Page
+    document.getElementById("view-planner").classList.remove("active");
+    document.getElementById("view-results").classList.add("active");
+    appState.currentView = "results";
 
-      // Update Map Route Tab Pill times
-      if (data.routes.fastest) document.getElementById("pill-fastest-time").textContent = `${data.routes.fastest.total_time_min}m`;
-      if (data.routes.eco) document.getElementById("pill-eco-time").textContent = `${data.routes.eco.total_time_min}m`;
-      if (data.routes.weather_safe) document.getElementById("pill-weather-time").textContent = `${data.routes.weather_safe.total_time_min}m`;
-
-      // Render Routes on Map
-      renderMap(data.routes);
-      renderMapNodes();
-
-      // Select default route (Fastest)
-      selectResultRoute("fastest");
-
-      // Update Drawer
-      renderDrawerComparison(data.routes);
-      renderDrawerSavings(data.routes);
-      loadDrawerHistory();
-
-    } else {
-      alert("Route optimization failed: " + (data.detail || data.message || "Unknown error"));
-    }
-  } catch (err) {
-    console.error("Optimization query error:", err);
+    renderResultsCockpit(data);
+  } catch (e) {
+    alert(`Error: ${e.message}`);
   } finally {
-    btn.innerHTML = `<span>🚀 Calculate & Show Optimal Routes</span>`;
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
 }
 
-// -------------------------------------------------------------
-// High-Precision Real-Road Polyline Snapping
-// -------------------------------------------------------------
-const clientGeometryCache = {};
+function renderResultsCockpit(data) {
+  // Update Top Navigation Summary
+  const src = data.source;
+  const dst = data.destination;
+  document.getElementById("res-start-name").textContent = src.name;
+  document.getElementById("res-end-name").textContent = dst.name;
 
-async function getAccurateRoadPolyline(routeObj) {
-  if (!routeObj || !routeObj.path_coordinates || routeObj.path_coordinates.length === 0) return [];
+  const veh = appState.vehicles.find(v => v.id === appState.selectedVehicle);
+  const vehIcon = veh ? veh.icon : "🚗";
+  const h = appState.hourOfDay;
+  const period = h >= 12 ? "PM" : "AM";
+  const displayHour = h % 12 === 0 ? 12 : h % 12;
+  const timeStr = `${String(displayHour).padStart(2, "0")}:00 ${period}`;
 
-  // If backend already returned high-resolution curve points (> 15 points), use directly
-  if (routeObj.path_coordinates.length > 15) {
-    return routeObj.path_coordinates.map(p => [p.lat, p.lng]);
+  document.getElementById("res-trip-meta").textContent = 
+    `${vehIcon} ${veh ? veh.name.split(" (")[0] : "Petrol"} • ${appState.weatherCondition} • ${timeStr}`;
+
+  // Update Route Pill Time Badges
+  const r = data.routes;
+  if (r.fastest && r.fastest.found) {
+    document.getElementById("pill-fastest-time").textContent = `${r.fastest.total_time_min}m`;
+  }
+  if (r.eco && r.eco.found) {
+    document.getElementById("pill-eco-time").textContent = `${r.eco.total_time_min}m`;
+  }
+  if (r.clean_air && r.clean_air.found) {
+    document.getElementById("pill-clean-air-time").textContent = `${r.clean_air.total_time_min}m`;
+  }
+  if (r.weather_safe && r.weather_safe.found) {
+    document.getElementById("pill-weather-time").textContent = `${r.weather_safe.total_time_min}m`;
   }
 
-  // Extract sequence of node coordinates from steps
-  const waypoints = [];
-  if (routeObj.steps && routeObj.steps.length > 0) {
-    const firstNode = getNodeById(routeObj.steps[0].from_node);
-    if (firstNode) waypoints.push([firstNode.longitude, firstNode.latitude]);
-    routeObj.steps.forEach(s => {
-      const n = getNodeById(s.to_node);
-      if (n) waypoints.push([n.longitude, n.latitude]);
-    });
-  } else {
-    routeObj.path_coordinates.forEach(p => waypoints.push([p.lng, p.lat]));
-  }
+  // Initialize or Re-center Map
+  initOrUpdateMap(data);
 
-  if (waypoints.length < 2) {
-    return routeObj.path_coordinates.map(p => [p.lat, p.lng]);
-  }
+  // Update Floating Bottom HUD
+  updateBottomTelemetryHUD(appState.activeRouteKey);
 
-  const cacheKey = waypoints.map(w => `${w[0].toFixed(4)},${w[1].toFixed(4)}`).join(";");
-  if (clientGeometryCache[cacheKey]) {
-    return clientGeometryCache[cacheKey];
-  }
-
-  const url = `https://router.project-osrm.org/route/v1/driving/${cacheKey}?overview=full&geometries=geojson`;
-  try {
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (data.routes && data.routes.length > 0) {
-      const realPoints = data.routes[0].geometry.coordinates.map(pt => [pt[1], pt[0]]);
-      clientGeometryCache[cacheKey] = realPoints;
-      return realPoints;
-    }
-  } catch (err) {
-    console.warn("Client physical road snapping fallback:", err);
-  }
-
-  return routeObj.path_coordinates.map(p => [p.lat, p.lng]);
+  // Update Details Drawer Content
+  populateDetailsDrawer(data);
 }
 
 // -------------------------------------------------------------
-// Map & Route Polylines Rendering
+// Leaflet Map Initialization & Route Drawing
 // -------------------------------------------------------------
-async function renderMap(routes) {
-  if (!routePolylinesLayer) return;
-  routePolylinesLayer.clearLayers();
-  routeLayers = { fastest: null, eco: null, weather_safe: null };
+function initOrUpdateMap(data) {
+  const mapContainer = document.getElementById("results-map");
+  if (!mapContainer) return;
 
-  const allPoints = [];
-  const drawOrder = ["weather_safe", "eco", "fastest"];
+  if (!leafletMap) {
+    leafletMap = L.map("results-map", {
+      zoomControl: false,
+      attributionControl: false
+    }).setView([28.6139, 77.2090], 11);
 
-  for (const key of drawOrder) {
-    const r = routes[key];
-    if (!r || !r.found) continue;
+    L.control.zoom({ position: "bottomright" }).addTo(leafletMap);
 
-    // Fetch 100% real physical road geometry following actual streets
-    const latlngs = await getAccurateRoadPolyline(r);
-    latlngs.forEach(ll => allPoints.push(ll));
+    // Add Base Tile Layer
+    const provider = MAP_TILE_PROVIDERS[appState.currentMapLayer] || MAP_TILE_PROVIDERS.roadmap;
+    currentTileLayer = L.tileLayer(provider.url, provider.options).addTo(leafletMap);
 
-    const style = ROUTE_COLORS[key];
-    const polyline = L.polyline(latlngs, {
-      color: style.color,
-      weight: style.weight,
-      opacity: style.opacity,
-      lineJoin: "round"
-    });
-
-    polyline.bindTooltip(`<strong>${r.mode_title}</strong><br>Time: ${r.total_time_min}m | Fuel: ${r.total_fuel_units} ${r.fuel_unit_name}`, { sticky: true });
-    polyline.on("click", () => selectResultRoute(key));
-
-    routeLayers[key] = polyline;
-    routePolylinesLayer.addLayer(polyline);
+    // Layer groups for markers & polylines
+    nodeMarkersLayer = L.layerGroup().addTo(leafletMap);
+    routePolylinesLayer = L.layerGroup().addTo(leafletMap);
   }
 
-  // Weather Banner
-  const advisories = routes.fastest?.weather_advisories || [];
-  const banner = document.getElementById("results-weather-banner");
-  const bannerText = document.getElementById("results-weather-banner-text");
-  if (advisories.length > 0) {
-    banner.classList.remove("hidden");
-    bannerText.textContent = advisories.join(" • ");
-  } else {
-    banner.classList.add("hidden");
-  }
-
-  if (allPoints.length > 0 && leafletMap) {
-    leafletMap.fitBounds(L.latLngBounds(allPoints), { padding: [50, 50] });
-  }
-}
-
-function renderMapNodes() {
-  if (!nodeMarkersLayer) return;
+  // Clear previous layers
   nodeMarkersLayer.clearLayers();
+  routePolylinesLayer.clearLayers();
 
-  appState.nodes.forEach(node => {
-    const isSource = node.node_id === appState.selectedSource;
-    const isDest = node.node_id === appState.selectedDestination;
+  const srcNode = data.source;
+  const dstNode = data.destination;
 
-    let markerBg = "rgba(59, 130, 246, 0.85)";
-    let border = "1px solid #93c5fd";
-    let iconSymbol = "📍";
-
-    if (isSource) { markerBg = "#10b981"; border = "2px solid #fff"; iconSymbol = "🟢"; }
-    else if (isDest) { markerBg = "#ef4444"; border = "2px solid #fff"; iconSymbol = "🔴"; }
-
-    const customIcon = L.divIcon({
-      className: "delhi-node-marker",
-      html: `<div style="background-color:${markerBg}; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:${border}; font-size:10px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconSymbol}</div>`,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
-    });
-
-    const marker = L.marker([node.latitude, node.longitude], { icon: customIcon })
-      .bindTooltip(`<strong>${node.node_name}</strong><br><span style="color:#9ca3af">${node.zone}</span>`, { direction: "top" });
-
-    nodeMarkersLayer.addLayer(marker);
+  // Add Glowing Start Marker
+  const startIcon = L.divIcon({
+    className: "custom-hub-marker start",
+    html: "A",
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
   });
+  L.marker([srcNode.lat, srcNode.lng], { icon: startIcon })
+    .bindPopup(`<strong>Origin:</strong> ${srcNode.name}`)
+    .addTo(nodeMarkersLayer);
+
+  // Add Glowing Dest Marker
+  const destIcon = L.divIcon({
+    className: "custom-hub-marker dest",
+    html: "B",
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+  L.marker([dstNode.lat, dstNode.lng], { icon: destIcon })
+    .bindPopup(`<strong>Destination:</strong> ${dstNode.name}`)
+    .addTo(nodeMarkersLayer);
+
+  // Plot All 4 Routes
+  routeLayers = { fastest: null, eco: null, clean_air: null, weather_safe: null };
+  const allBounds = L.latLngBounds([[srcNode.lat, srcNode.lng], [dstNode.lat, dstNode.lng]]);
+
+  const routeKeys = ["weather_safe", "clean_air", "eco", "fastest"]; // draw order: fastest on top
+  routeKeys.forEach(key => {
+    const route = data.routes[key];
+    if (route && route.found && route.path_coordinates && route.path_coordinates.length > 0) {
+      const latlngs = route.path_coordinates.map(p => [p.lat, p.lng]);
+      latlngs.forEach(pt => allBounds.extend(pt));
+
+      const style = ROUTE_STYLES[key] || ROUTE_STYLES.fastest;
+      const poly = L.polyline(latlngs, {
+        color: style.color,
+        weight: style.weight,
+        opacity: style.opacity,
+        dashArray: style.dashArray,
+        lineCap: "round",
+        lineJoin: "round"
+      }).addTo(routePolylinesLayer);
+
+      poly.bindPopup(`
+        <div style="font-family:sans-serif; font-size:12px;">
+          <strong style="color:${style.color};">${route.mode_title}</strong><br>
+          🛣️ Corridor: <b>${route.route_summary_label}</b><br>
+          ⏱️ ETA: <b>${route.total_time_min} min</b><br>
+          📏 Distance: <b>${route.total_distance_km} km</b><br>
+          ⛽ Fuel/Energy: <b>${route.total_fuel_units} ${route.fuel_unit_name}</b><br>
+          🍃 AQI: <b>${route.avg_aqi_index} (${route.pollution_level})</b><br>
+          🛡️ Safety: <b>${route.weather_safety_score}%</b>
+        </div>
+      `);
+
+      routeLayers[key] = poly;
+    }
+  });
+
+  leafletMap.fitBounds(allBounds, { padding: [60, 60], maxZoom: 14 });
+  leafletMap.invalidateSize();
 }
 
-function selectResultRoute(key) {
-  appState.activeRouteKey = key;
+function updateBottomTelemetryHUD(routeKey) {
+  if (!appState.lastResult) return;
+  const rData = appState.lastResult.routes;
+  const activeRoute = (routeKey === "all" || !rData[routeKey] || !rData[routeKey].found) ? rData.fastest : rData[routeKey];
+  
+  if (!activeRoute) return;
 
-  document.querySelectorAll(".map-route-pill").forEach(pill => {
-    pill.classList.toggle("active", pill.dataset.route === key);
-  });
+  document.getElementById("quick-mode-title").textContent = activeRoute.mode_title;
+  document.getElementById("quick-corridor-label").textContent = activeRoute.route_summary_label;
+  document.getElementById("quick-mode-badge").textContent = activeRoute.mode_badge;
+  document.getElementById("quick-engine-tag").textContent = activeRoute.engine_used || "⚡ C++ Dijkstra";
+  
+  document.getElementById("quick-eta").textContent = `${activeRoute.total_time_min} min`;
+  document.getElementById("quick-dist").textContent = `${activeRoute.total_distance_km} km`;
+  document.getElementById("quick-fuel").textContent = `${activeRoute.total_fuel_units} ${activeRoute.fuel_unit_name}`;
+  document.getElementById("quick-co2").textContent = `${activeRoute.total_co2_kg} kg CO₂`;
+  document.getElementById("quick-aqi").textContent = `${activeRoute.avg_aqi_index} (${activeRoute.pollution_level.split(" (")[0]})`;
+  document.getElementById("quick-safety").textContent = `${activeRoute.weather_safety_score}%`;
 
+  // Highlight polylines based on selection
   Object.keys(routeLayers).forEach(k => {
-    const layer = routeLayers[k];
-    if (!layer) return;
+    const poly = routeLayers[k];
+    if (poly) {
+      if (routeKey === "all" || routeKey === k) {
+        poly.setStyle({ opacity: 0.95, weight: (routeKey === k ? 8 : 5) });
+      } else {
+        poly.setStyle({ opacity: 0.25, weight: 3 });
+      }
+    }
+  });
+}
 
-    if (key === "all" || key === k) {
-      layer.setStyle({
-        opacity: key === "all" ? 0.85 : 1.0,
-        weight: key === k ? 8 : (key === "all" ? ROUTE_COLORS[k].weight : 3)
+function populateDetailsDrawer(data) {
+  const compGrid = document.getElementById("drawer-comparison-cards");
+  if (compGrid) {
+    compGrid.innerHTML = "";
+    ["fastest", "eco", "clean_air", "weather_safe"].forEach(k => {
+      const r = data.routes[k];
+      if (!r || !r.found) return;
+
+      const aqiClass = r.avg_aqi_index <= 100 ? "aqi-good" : (r.avg_aqi_index <= 200 ? "aqi-mod" : (r.avg_aqi_index <= 300 ? "aqi-poor" : "aqi-hazard"));
+
+      const card = document.createElement("div");
+      card.className = `drawer-route-card ${appState.activeRouteKey === k ? "active" : ""}`;
+      card.innerHTML = `
+        <div class="d-card-header">
+          <span class="d-card-title">${r.mode_title}</span>
+          <span class="drawer-badge-pill">${r.mode_badge}</span>
+        </div>
+        <div style="font-size:0.8rem; font-weight:600; color:#38bdf8; margin: 4px 0 8px;">
+          ${r.route_summary_label}
+        </div>
+        <div class="d-card-metrics">
+          <div class="d-m-box">
+            <span class="d-m-label">ETA</span>
+            <span class="d-m-val" style="color:var(--cyan-core);">${r.total_time_min}m</span>
+          </div>
+          <div class="d-m-box">
+            <span class="d-m-label">Distance</span>
+            <span class="d-m-val">${r.total_distance_km}km</span>
+          </div>
+          <div class="d-m-box">
+            <span class="d-m-label">Fuel</span>
+            <span class="d-m-val">${r.total_fuel_units} ${r.fuel_unit_name}</span>
+          </div>
+          <div class="d-m-box">
+            <span class="d-m-label">AQI</span>
+            <span class="d-m-val"><span class="aqi-badge ${aqiClass}">${r.avg_aqi_index}</span></span>
+          </div>
+        </div>
+      `;
+
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".drawer-route-card").forEach(c => c.classList.remove("active"));
+        card.classList.add("active");
+        appState.activeRouteKey = k;
+        updateBottomTelemetryHUD(k);
+        populateDrawerSteps(data.routes[k]);
       });
-      if (!routePolylinesLayer.hasLayer(layer)) routePolylinesLayer.addLayer(layer);
-    } else {
-      layer.setStyle({ opacity: 0.15, weight: 3 });
-    }
-  });
 
-  const activeRoute = appState.lastResult?.routes[key === "all" ? "fastest" : key] || appState.lastResult?.routes.fastest;
-  if (activeRoute) {
-    document.getElementById("quick-mode-title").textContent = activeRoute.mode_title;
-    document.getElementById("quick-mode-badge").textContent = activeRoute.mode_badge;
-    document.getElementById("quick-eta").textContent = `${activeRoute.total_time_min} min`;
-    document.getElementById("quick-dist").textContent = `${activeRoute.total_distance_km} km`;
-    document.getElementById("quick-fuel").textContent = `${activeRoute.total_fuel_units} ${activeRoute.fuel_unit_name.slice(0, 3)}`;
-    document.getElementById("quick-cost").textContent = `₹${activeRoute.total_cost_inr}`;
-    document.getElementById("quick-safety").textContent = `${activeRoute.weather_safety_score}%`;
-
-    renderDrawerItinerary(activeRoute);
-  }
-}
-
-// -------------------------------------------------------------
-// On-Demand Details Drawer Renderers
-// -------------------------------------------------------------
-function renderDrawerComparison(routes) {
-  const container = document.getElementById("drawer-comparison-cards");
-  if (!container) return;
-  container.innerHTML = "";
-
-  ["fastest", "eco", "weather_safe"].forEach(k => {
-    const r = routes[k];
-    if (!r || !r.found) return;
-
-    const card = document.createElement("div");
-    card.className = `route-card ${k} ${appState.activeRouteKey === k ? "selected" : ""}`;
-    card.innerHTML = `
-      <div class="route-card-header">
-        <span class="route-name">${r.mode_title}</span>
-        <span class="route-badge">${r.mode_badge}</span>
-      </div>
-      <div class="route-metrics-grid">
-        <div class="metric-item">
-          <span class="metric-lbl">ETA</span>
-          <span class="metric-val" style="color:var(--accent-fastest)">${r.total_time_min} min</span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-lbl">Fuel / Energy</span>
-          <span class="metric-val" style="color:var(--accent-eco)">${r.total_fuel_units} ${r.fuel_unit_name.slice(0, 3)}</span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-lbl">Safety Score</span>
-          <span class="metric-val" style="color:var(--accent-weather)">${r.weather_safety_score}%</span>
-        </div>
-      </div>
-      <div class="route-metrics-grid" style="border:none; margin-top:4px; padding:0;">
-        <div class="metric-item"><span class="metric-lbl">Distance</span><span class="metric-val">${r.total_distance_km} km</span></div>
-        <div class="metric-item"><span class="metric-lbl">CO₂</span><span class="metric-val">${r.total_co2_kg} kg</span></div>
-        <div class="metric-item"><span class="metric-lbl">Est. Cost</span><span class="metric-val">₹${r.total_cost_inr}</span></div>
-      </div>
-    `;
-
-    card.addEventListener("click", () => {
-      selectResultRoute(k);
-      document.querySelectorAll(".route-card").forEach(c => c.classList.remove("selected"));
-      card.classList.add("selected");
+      compGrid.appendChild(card);
     });
-
-    container.appendChild(card);
-  });
-}
-
-function renderDrawerSavings(routes) {
-  const box = document.getElementById("drawer-savings-box");
-  const text = document.getElementById("drawer-savings-text");
-  if (!box || !text) return;
-
-  const fastest = routes.fastest;
-  const eco = routes.eco;
-
-  if (fastest && eco && fastest.total_fuel_units > 0) {
-    const fuelDiff = fastest.total_fuel_units - eco.total_fuel_units;
-    const pctSaved = Math.max(0, (fuelDiff / fastest.total_fuel_units) * 100).toFixed(1);
-    const co2Saved = Math.max(0, fastest.total_co2_kg - eco.total_co2_kg).toFixed(2);
-
-    if (fuelDiff > 0.05) {
-      box.classList.remove("hidden");
-      text.innerHTML = `🌿 <strong>Eco Route saves ${pctSaved}% fuel</strong> (${fuelDiff.toFixed(2)} ${fastest.fuel_unit_name}) and <strong>${co2Saved} kg CO₂</strong> compared to the fastest route.`;
-    } else {
-      box.classList.remove("hidden");
-      text.innerHTML = `⚡ The fastest route is already highly energy-efficient for this corridor!`;
-    }
-  } else {
-    box.classList.add("hidden");
   }
+
+  // Savings box
+  const fastFuel = data.routes.fastest?.total_fuel_units || 1.0;
+  const ecoFuel = data.routes.eco?.total_fuel_units || fastFuel;
+  const savingsPct = fastFuel > 0 ? Math.max(0, ((fastFuel - ecoFuel) / fastFuel * 100).toFixed(1)) : 0;
+  const co2Saved = Math.max(0, ((data.routes.fastest?.total_co2_kg || 0) - (data.routes.eco?.total_co2_kg || 0)).toFixed(2));
+
+  const savingsBox = document.getElementById("drawer-savings-box");
+  const savingsText = document.getElementById("drawer-savings-text");
+  if (savingsBox && savingsText) {
+    if (savingsPct > 0) {
+      savingsText.textContent = `Eco-friendly route saves ${savingsPct}% fuel and abates ${co2Saved} kg of carbon emissions.`;
+      savingsBox.classList.remove("hidden");
+    } else {
+      savingsBox.classList.add("hidden");
+    }
+  }
+
+  populateDrawerSteps(data.routes.fastest);
+  loadRecentHistory();
 }
 
-function renderDrawerItinerary(route) {
-  const label = document.getElementById("drawer-active-route-label");
+function populateDrawerSteps(route) {
   const list = document.getElementById("drawer-steps-list");
-  if (!label || !list) return;
+  const label = document.getElementById("drawer-active-route-label");
+  if (!list || !route) return;
 
-  label.textContent = route.mode_title;
+  if (label) label.textContent = `${route.mode_title} (${route.route_summary_label})`;
   list.innerHTML = "";
 
   if (!route.steps || route.steps.length === 0) {
-    list.innerHTML = `<div style="padding:10px; color:#6b7280; font-size:0.75rem; text-align:center;">No step details available.</div>`;
+    list.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted);">Direct node connection.</div>`;
     return;
   }
 
-  route.steps.forEach((s, idx) => {
-    const row = document.createElement("div");
-    row.className = "step-row";
-    row.innerHTML = `
-      <div>
-        <div class="step-road">${idx + 1}. ${s.road_name}</div>
-        <div class="step-nodes">${s.from_name.split(" (")[0]} ➔ ${s.to_name.split(" (")[0]} (${s.road_type})</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-family:'JetBrains Mono'; font-weight:700; color:#fff;">${s.distance_km} km</div>
-        <div style="color:#9ca3af; font-size:0.68rem;">~${s.predicted_time_min} min</div>
+  route.steps.forEach((step, idx) => {
+    const aqiClass = step.aqi_index <= 100 ? "aqi-good" : (step.aqi_index <= 200 ? "aqi-mod" : (step.aqi_index <= 300 ? "aqi-poor" : "aqi-hazard"));
+    
+    const item = document.createElement("div");
+    item.className = "step-item";
+    item.innerHTML = `
+      <span class="step-index-badge">${idx + 1}</span>
+      <div class="step-content">
+        <span class="step-road-name">${step.road_name} (${step.road_type})</span>
+        <span class="step-nodes">${step.from_name} ➔ ${step.to_name}</span>
+        <div class="step-meta-row">
+          <span>📏 ${step.distance_km} km</span>
+          <span>⏱️ ${step.predicted_time_min} min</span>
+          <span>⚡ Limit: ${step.speed_limit_kmh} km/h</span>
+          <span><span class="aqi-badge ${aqiClass}">AQI ${step.aqi_index}</span></span>
+        </div>
       </div>
     `;
-    list.appendChild(row);
+    list.appendChild(item);
   });
 }
 
-async function loadDrawerHistory() {
-  try {
-    const res = await fetch(`${API_BASE}/api/history?limit=5`);
-    const data = await res.json();
-    const list = document.getElementById("drawer-history-list");
-    if (!list) return;
-    list.innerHTML = "";
+async function loadRecentHistory() {
+  const historyList = document.getElementById("drawer-history-list");
+  if (!historyList) return;
 
-    if (!data.history || data.history.length === 0) {
-      list.innerHTML = `<div style="padding:10px; color:#6b7280; font-size:0.75rem; text-align:center;">No past queries logged.</div>`;
+  try {
+    const res = await fetch(`${API_BASE}/api/history?limit=6`);
+    const data = await res.json();
+    const history = data.history || [];
+
+    historyList.innerHTML = "";
+    if (history.length === 0) {
+      historyList.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted);">No queries logged yet.</div>`;
       return;
     }
 
-    data.history.forEach(item => {
+    history.forEach(item => {
       const row = document.createElement("div");
       row.className = "history-item";
       row.innerHTML = `
-        <div>
-          <span class="hist-route">${item.source_id.replace("NODE_", "")} ➔ ${item.destination_id.replace("NODE_", "")}</span>
-          <span style="font-size:0.64rem; color:#6b7280; display:block;">${item.vehicle_type.replace("_", " ")} • ${item.weather_condition}</span>
-        </div>
-        <div style="text-align:right;">
-          <span style="font-family:'JetBrains Mono'; font-weight:700; color:#38bdf8;">${item.fastest_time_min}m</span>
-          <span style="font-size:0.64rem; color:#34d399; display:block;">-${item.eco_fuel_saved_percent}% fuel</span>
+        <div class="h-route-title">${item.source_name} ➔ ${item.destination_name}</div>
+        <div class="h-meta-tags">
+          <span>${item.vehicle_type}</span>
+          <span>${item.weather_condition}</span>
+          <span>ETA: ${item.fastest_time_min}m</span>
+          <span style="color:var(--emerald-core);">Eco Save: ${item.eco_fuel_saved_percent}%</span>
         </div>
       `;
-      list.appendChild(row);
+      historyList.appendChild(row);
     });
-  } catch (e) {
-    console.error("Error fetching history:", e);
+  } catch (err) {
+    console.error("Error loading history:", err);
   }
 }
 
 // -------------------------------------------------------------
-// Google Maps API Key Modal Listeners
+// Results View Navigation Listeners
 // -------------------------------------------------------------
-function setupGoogleMapsModalListeners() {
-  const modal = document.getElementById("gmaps-key-modal");
-  const openBtn = document.getElementById("btn-open-gmaps-modal");
-  const closeBtn = document.getElementById("btn-close-gmaps-modal");
-  const saveBtn = document.getElementById("btn-save-gmaps-key");
-  const input = document.getElementById("input-gmaps-api-key");
-
-  if (openBtn) {
-    openBtn.addEventListener("click", () => {
-      if (modal) modal.classList.remove("hidden");
-    });
-  }
-
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      if (modal) modal.classList.add("hidden");
-    });
-  }
-
-  if (saveBtn) {
-    saveBtn.addEventListener("click", async () => {
-      const key = input.value.trim();
-      if (key) {
-        localStorage.setItem(GMAPS_KEY_STORAGE, key);
-        try {
-          await initGoogleMapsSdk(key);
-          alert("✅ Google Maps API Key activated successfully! Real Google Maps services are enabled.");
-        } catch (e) {
-          alert("Key saved! Live Google Maps tiles and traffic layers will be used.");
-        }
-      } else {
-        localStorage.removeItem(GMAPS_KEY_STORAGE);
-        alert("Google Maps API Key removed. Reverting to default high-definition road routing.");
-      }
-      if (modal) modal.classList.add("hidden");
-    });
-  }
-}
-
-// -------------------------------------------------------------
-// Event Listeners Setup
-// -------------------------------------------------------------
-function setupPlannerEventListeners() {
-  // Autocomplete Dropdowns for Source & Destination
-  setupSearchDropdown("planner-search-source", "planner-src-dropdown", (node) => {
-    appState.selectedSource = node.node_id;
-    updatePlannerInputs();
-  });
-
-  setupSearchDropdown("planner-search-dest", "planner-dst-dropdown", (node) => {
-    appState.selectedDestination = node.node_id;
-    updatePlannerInputs();
-  });
-
-  // Clear Buttons
-  const clearSrcBtn = document.getElementById("btn-planner-clear-src");
-  if (clearSrcBtn) {
-    clearSrcBtn.addEventListener("click", () => {
-      const input = document.getElementById("planner-search-source");
-      if (input) { input.value = ""; input.focus(); }
-    });
-  }
-
-  const clearDstBtn = document.getElementById("btn-planner-clear-dst");
-  if (clearDstBtn) {
-    clearDstBtn.addEventListener("click", () => {
-      const input = document.getElementById("planner-search-dest");
-      if (input) { input.value = ""; input.focus(); }
-    });
-  }
-
-  // Swap Button
-  const swapBtn = document.getElementById("btn-planner-swap");
-  if (swapBtn) {
-    swapBtn.addEventListener("click", () => {
-      const tmp = appState.selectedSource;
-      appState.selectedSource = appState.selectedDestination;
-      appState.selectedDestination = tmp;
-      updatePlannerInputs();
-    });
-  }
-
-  // Popular Quick Chips
-  document.querySelectorAll(".quick-chip").forEach(chip => {
-    chip.addEventListener("click", () => {
-      appState.selectedSource = chip.dataset.src;
-      appState.selectedDestination = chip.dataset.dst;
-      updatePlannerInputs();
-      executeRouteOptimization();
-    });
-  });
-
-  // Weather & Time
-  const weatherSelect = document.getElementById("planner-weather-select");
-  if (weatherSelect) {
-    weatherSelect.addEventListener("change", e => {
-      appState.weatherCondition = e.target.value;
-    });
-  }
-
-  const hourSlider = document.getElementById("planner-hour-slider");
-  const timeDisplay = document.getElementById("planner-time-display");
-  if (hourSlider && timeDisplay) {
-    hourSlider.addEventListener("input", e => {
-      const h = parseInt(e.target.value);
-      appState.hourOfDay = h;
-      const period = h >= 12 ? "PM" : "AM";
-      const displayH = h % 12 === 0 ? 12 : h % 12;
-      const isRush = (h >= 8 && h <= 10) || (h >= 17 && h <= 20);
-      timeDisplay.textContent = `${displayH.toString().padStart(2, '0')}:00 ${period} ${isRush ? "(Peak Rush)" : "(Normal)"}`;
-    });
-  }
-
-  // Main CTA Button
-  const findBtn = document.getElementById("btn-find-routes");
-  if (findBtn) {
-    findBtn.addEventListener("click", executeRouteOptimization);
-  }
-}
-
 function setupResultsEventListeners() {
-  // Back to Planner Button
-  const backBtn = document.getElementById("btn-back-to-planner");
-  if (backBtn) {
-    backBtn.addEventListener("click", () => {
-      switchView("planner");
-    });
-  }
+  // Back to Planner
+  document.getElementById("btn-back-to-planner")?.addEventListener("click", () => {
+    document.getElementById("view-results").classList.remove("active");
+    document.getElementById("view-planner").classList.add("active");
+    appState.currentView = "planner";
+  });
 
-  // Real-Time Google Traffic Layer Toggle
-  const trafficBtn = document.getElementById("btn-toggle-traffic");
-  if (trafficBtn) {
-    trafficBtn.addEventListener("click", toggleTrafficLayer);
-  }
+  // Recenter map
+  document.getElementById("btn-results-recenter")?.addEventListener("click", () => {
+    if (leafletMap && appState.lastResult) {
+      initOrUpdateMap(appState.lastResult);
+    }
+  });
 
-  // Map Tile Layer Switcher (Google Roadmap / Satellite / Hybrid / Terrain / Dark)
-  const mapLayerSelect = document.getElementById("select-map-layer");
-  if (mapLayerSelect) {
-    mapLayerSelect.addEventListener("change", (e) => {
-      changeMapTileLayer(e.target.value);
-    });
-  }
-
-  // Map Route Tabs
+  // Route Tabs switcher
   document.querySelectorAll(".map-route-pill").forEach(pill => {
     pill.addEventListener("click", () => {
-      selectResultRoute(pill.dataset.route);
+      document.querySelectorAll(".map-route-pill").forEach(p => p.classList.remove("active"));
+      pill.classList.add("active");
+      
+      const rKey = pill.dataset.route;
+      appState.activeRouteKey = rKey;
+      updateBottomTelemetryHUD(rKey);
+
+      if (appState.lastResult) {
+        const targetRoute = rKey === "all" ? appState.lastResult.routes.fastest : appState.lastResult.routes[rKey];
+        populateDrawerSteps(targetRoute);
+      }
     });
   });
 
-  // Recenter Map
-  const recenterBtn = document.getElementById("btn-results-recenter");
-  if (recenterBtn) {
-    recenterBtn.addEventListener("click", () => {
-      if (leafletMap) leafletMap.setView([28.5800, 77.2000], 11);
+  // Map Tile Style Selector
+  const layerSelect = document.getElementById("select-map-layer");
+  if (layerSelect) {
+    layerSelect.addEventListener("change", (e) => {
+      const selected = e.target.value;
+      appState.currentMapLayer = selected;
+      if (leafletMap && currentTileLayer) {
+        leafletMap.removeLayer(currentTileLayer);
+        const provider = MAP_TILE_PROVIDERS[selected] || MAP_TILE_PROVIDERS.roadmap;
+        currentTileLayer = L.tileLayer(provider.url, provider.options).addTo(leafletMap);
+        currentTileLayer.bringToBack();
+      }
     });
   }
 
   // Drawer Toggle
+  const toggleDrawerBtn = document.getElementById("btn-toggle-details");
+  const closeDrawerBtn = document.getElementById("btn-close-drawer");
+  const quickViewBtn = document.getElementById("btn-quick-view-steps");
   const drawer = document.getElementById("details-drawer");
-  const backdrop = document.getElementById("drawer-backdrop");
 
-  const openDrawer = () => {
-    if (drawer) drawer.classList.remove("hidden");
-    if (backdrop) backdrop.classList.remove("hidden");
+  const openDrawer = () => drawer?.classList.remove("hidden");
+  const closeDrawer = () => drawer?.classList.add("hidden");
+
+  toggleDrawerBtn?.addEventListener("click", () => {
+    if (drawer?.classList.contains("hidden")) openDrawer();
+    else closeDrawer();
+  });
+  closeDrawerBtn?.addEventListener("click", closeDrawer);
+  quickViewBtn?.addEventListener("click", openDrawer);
+
+  document.getElementById("btn-drawer-refresh-history")?.addEventListener("click", loadRecentHistory);
+}
+
+// -------------------------------------------------------------
+// Live Incident Simulation Modal Listeners
+// -------------------------------------------------------------
+function setupIncidentModalListeners() {
+  const modal = document.getElementById("incident-modal");
+  const openBtn = document.getElementById("btn-open-incident-modal");
+  const closeBtn = document.getElementById("btn-close-incident-modal");
+  const applyBtn = document.getElementById("btn-apply-incident");
+  const clearBtn = document.getElementById("btn-clear-incidents");
+
+  openBtn?.addEventListener("click", () => modal?.classList.remove("hidden"));
+  closeBtn?.addEventListener("click", () => modal?.classList.add("hidden"));
+
+  // Apply Incident
+  applyBtn?.addEventListener("click", async () => {
+    const roadId = document.getElementById("incident-road-select").value;
+    const incType = document.getElementById("incident-type-select").value;
+    const severity = document.getElementById("incident-severity-select").value;
+
+    const payload = {
+      road_id: roadId,
+      incident_type: incType,
+      severity: severity,
+      description: `Simulated ${severity} ${incType} roadblock.`,
+      is_active: true
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/api/simulate-incident`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      modal?.classList.add("hidden");
+
+      // Show Weather & Incident Alert Banner on Map
+      const banner = document.getElementById("results-weather-banner");
+      const bannerText = document.getElementById("results-weather-banner-text");
+      if (banner && bannerText) {
+        bannerText.textContent = `🚨 ACTIVE INCIDENT: Road ${roadId} is blocked (${severity} ${incType}). C++ Engine recalculated optimal bypass!`;
+        banner.classList.remove("hidden");
+      }
+
+      // Re-run optimization immediately with updated road state
+      if (appState.currentView === "results") {
+        await executeRouteCalculation();
+      }
+    } catch (e) {
+      alert(`Failed to apply incident: ${e.message}`);
+    }
+  });
+
+  // Clear Incidents
+  clearBtn?.addEventListener("click", async () => {
+    try {
+      await fetch(`${API_BASE}/api/clear-incidents`, { method: "POST" });
+      modal?.classList.add("hidden");
+      document.getElementById("results-weather-banner")?.classList.add("hidden");
+      
+      if (appState.currentView === "results") {
+        await executeRouteCalculation();
+      }
+    } catch (e) {
+      alert(`Failed to clear incidents: ${e.message}`);
+    }
+  });
+}
+
+// -------------------------------------------------------------
+// Interactive Presentation Deck Controller
+// -------------------------------------------------------------
+function setupPresentationDeckListeners() {
+  const modal = document.getElementById("presentation-modal");
+  const openBtn = document.getElementById("btn-open-ppt");
+  const closeBtn = document.getElementById("btn-close-deck");
+  const prevBtn = document.getElementById("btn-slide-prev");
+  const nextBtn = document.getElementById("btn-slide-next");
+  const fsBtn = document.getElementById("btn-deck-fullscreen");
+  const dots = document.querySelectorAll(".slide-dot");
+
+  const showSlide = (n) => {
+    if (n < 1) n = 1;
+    if (n > appState.totalSlides) n = appState.totalSlides;
+    appState.currentSlide = n;
+
+    document.querySelectorAll(".ppt-slide").forEach(s => s.classList.remove("active"));
+    const activeSlide = document.querySelector(`.ppt-slide[data-slide="${n}"]`);
+    if (activeSlide) activeSlide.classList.add("active");
+
+    dots.forEach((d, i) => {
+      d.classList.toggle("active", i + 1 === n);
+    });
+
+    const indicator = document.getElementById("slide-num-indicator");
+    if (indicator) indicator.textContent = `${n} / ${appState.totalSlides}`;
   };
 
-  const closeDrawer = () => {
-    if (drawer) drawer.classList.add("hidden");
-    if (backdrop) backdrop.classList.add("hidden");
-  };
+  openBtn?.addEventListener("click", () => {
+    modal?.classList.remove("hidden");
+    showSlide(1);
+  });
 
-  const btnToggle = document.getElementById("btn-toggle-details");
-  if (btnToggle) btnToggle.addEventListener("click", openDrawer);
+  closeBtn?.addEventListener("click", () => {
+    modal?.classList.add("hidden");
+  });
 
-  const btnQuickSteps = document.getElementById("btn-quick-view-steps");
-  if (btnQuickSteps) btnQuickSteps.addEventListener("click", openDrawer);
+  prevBtn?.addEventListener("click", () => showSlide(appState.currentSlide - 1));
+  nextBtn?.addEventListener("click", () => showSlide(appState.currentSlide + 1));
 
-  const btnCloseDrawer = document.getElementById("btn-close-drawer");
-  if (btnCloseDrawer) btnCloseDrawer.addEventListener("click", closeDrawer);
+  dots.forEach(d => {
+    d.addEventListener("click", () => {
+      const sNum = parseInt(d.dataset.slide, 10);
+      showSlide(sNum);
+    });
+  });
 
-  if (backdrop) backdrop.addEventListener("click", closeDrawer);
+  // Fullscreen
+  fsBtn?.addEventListener("click", () => {
+    const card = document.querySelector(".presentation-card");
+    if (!document.fullscreenElement) {
+      card?.requestFullscreen().catch(err => console.log(err));
+    } else {
+      document.exitFullscreen();
+    }
+  });
 
-  const btnRefreshHist = document.getElementById("btn-drawer-refresh-history");
-  if (btnRefreshHist) btnRefreshHist.addEventListener("click", loadDrawerHistory);
+  // Keyboard Navigation for Presentation Mode
+  document.addEventListener("keydown", (e) => {
+    if (modal && !modal.classList.contains("hidden")) {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+        showSlide(appState.currentSlide + 1);
+      } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        showSlide(appState.currentSlide - 1);
+      } else if (e.key === "Escape") {
+        modal.classList.add("hidden");
+      }
+    }
+  });
 }

@@ -1,8 +1,6 @@
-model,target,mae,rmse,r2
-Linear Regression (Baseline),Travel Time (min),10.040631376553705,15.528074244006147,0.7032629844338072
-Ridge Regression,Travel Time (min),10.040284305286493,15.528165996366493,0.7032594777012158
-Random Forest Regressor,Travel Time (min),1.3037044989215667,2.646798286236955,0.9913785916405037
-Gradient Boosting Regressor,Travel Time (min),1.0647131892562736,2.11982003346805,0.9944698805637568
-Linear Regression (Baseline),Fuel Units (L/kWh),0.5203179354970306,0.8754365332551116,0.7659464584167718
-Random Forest Regressor,Fuel Units (L/kWh),0.08950817426979182,0.19620302990100283,0.988243520151683
-Gradient Boosting Regressor,Fuel Units (L/kWh),0.05977477159614845,0.1294936939514189,0.994878901563775
+Target,Model,MAE,RMSE,R2_Score
+Travel Time (min),Linear Regression (Baseline),9.4935,13.2626,0.7894
+Travel Time (min),Ridge Regression,9.4935,13.2626,0.7894
+Travel Time (min),Random Forest Regressor,1.7964,3.38,0.9863
+Travel Time (min),Gradient Boosting Regressor,1.7503,3.2844,0.9871
+Fuel/Energy (Units),Gradient Boosting Regressor,0.0686,0.1291,0.9972

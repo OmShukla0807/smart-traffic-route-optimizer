@@ -1,17 +1,24 @@
 """
-ML Preprocessing Pipeline for Delhi Traffic & Weather Dataset.
-Processes raw data, encodes categorical/temporal features, splits into train/test,
-and saves preprocessed datasets and feature schema.
+ML Preprocessing Pipeline for Delhi Traffic, Weather & Pollution Dataset.
+Processes raw dataset, performs cyclical temporal engineering (sin/cos for hour and day),
+encodes categorical attributes (road_type, weather_condition, vehicle_type),
+scales numerical variables including AQI and pollution metrics, splits into train/test,
+and serializes the fitted preprocessor.
 """
 
 import os
+import sys
 import joblib
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-# Categorical column definitions
+BASE_DIR = Path(__file__).resolve().parents[1]
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 CATEGORICAL_COLS = ["road_type", "weather_condition", "vehicle_type"]
 NUMERICAL_COLS = [
     "distance_km",
@@ -22,6 +29,10 @@ NUMERICAL_COLS = [
     "precipitation_mm",
     "wind_speed_kmh",
     "road_gradient_percent",
+    "flood_risk_score",
+    "fog_risk_score",
+    "aqi_index",
+    "pollution_exposure_score",
     "hour_sin",
     "hour_cos",
     "day_sin",
@@ -32,18 +43,18 @@ TARGET_TIME = "travel_time_minutes"
 TARGET_FUEL = "fuel_consumption_units"
 
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Engineer cyclical time features and derived indicators."""
+    """Engineer cyclical time features and derived temporal indicators."""
     df = df.copy()
     
-    # Cyclical hour features
+    # 24-hour cyclical encoding
     df["hour_sin"] = np.sin(2 * np.pi * df["hour_of_day"] / 24.0)
     df["hour_cos"] = np.cos(2 * np.pi * df["hour_of_day"] / 24.0)
     
-    # Cyclical day features
+    # 7-day cyclical encoding
     df["day_sin"] = np.sin(2 * np.pi * df["day_of_week"] / 7.0)
     df["day_cos"] = np.cos(2 * np.pi * df["day_of_week"] / 7.0)
     
-    # Weekend indicator
+    # Weekend boolean indicator
     df["is_weekend"] = (df["day_of_week"] >= 5).astype(int)
     
     return df
@@ -62,7 +73,7 @@ class TrafficDataPreprocessor:
         self.encoder.fit(df_eng[CATEGORICAL_COLS])
         cat_feature_names = list(self.encoder.get_feature_names_out(CATEGORICAL_COLS))
         
-        # All feature names
+        # All feature names in deterministic order
         self.feature_names = NUMERICAL_COLS + cat_feature_names
         
         # Transform full matrix and fit scaler
@@ -116,8 +127,9 @@ def run_preprocessing(raw_csv_path: str, output_dir: str):
     print(f"Feature names: {preprocessor.feature_names}")
     
     # Save train/test numpy arrays
+    npz_out = os.path.join(output_dir, "train_test_data.npz")
     np.savez_compressed(
-        os.path.join(output_dir, "train_test_data.npz"),
+        npz_out,
         X_train=X_train,
         X_test=X_test,
         y_train_time=y_train_time,
@@ -125,10 +137,9 @@ def run_preprocessing(raw_csv_path: str, output_dir: str):
         y_train_fuel=y_train_fuel,
         y_test_fuel=y_test_fuel
     )
-    print(f"Saved processed train/test arrays to {os.path.join(output_dir, 'train_test_data.npz')}")
+    print(f"Saved processed train/test arrays to {npz_out}")
 
 if __name__ == "__main__":
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    raw_path = os.path.join(base_dir, "data", "raw", "delhi_traffic.csv")
-    processed_dir = os.path.join(base_dir, "data", "processed")
+    raw_path = os.path.join(BASE_DIR, "data", "raw", "delhi_traffic.csv")
+    processed_dir = os.path.join(BASE_DIR, "data", "processed")
     run_preprocessing(raw_path, processed_dir)

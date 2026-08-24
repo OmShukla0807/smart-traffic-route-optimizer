@@ -1,5 +1,7 @@
 /**
- * Robust High-Performance C++ Dijkstra Engine.
+ * Smart Traffic Route Optimizer - High-Performance C++ Dijkstra Engine
+ * Phase 10: Standalone C++ Graph Engine utilizing Min-Heap Priority Queue,
+ * Adjacency Lists, Distance Array, and Predecessor Tracking for Path Reconstruction.
  */
 
 #include <iostream>
@@ -26,14 +28,13 @@ struct EdgePredecessor {
     string road_id;
 };
 
-// Robust integer extractor from key-value
+// Fast and safe integer extraction from JSON fragment
 int extract_int(const string& text, const string& key, int fallback = 0) {
     size_t pos = text.find("\"" + key + "\"");
     if (pos == string::npos) return fallback;
     size_t colon = text.find(':', pos + key.length() + 2);
     if (colon == string::npos) return fallback;
     
-    // Find first digit or minus
     size_t start = colon + 1;
     while (start < text.length() && (isspace(text[start]) || text[start] == '"')) {
         start++;
@@ -53,7 +54,7 @@ int extract_int(const string& text, const string& key, int fallback = 0) {
     }
 }
 
-// Robust string extractor
+// Fast string extraction from JSON fragment
 string extract_str(const string& text, const string& key) {
     size_t pos = text.find("\"" + key + "\"");
     if (pos == string::npos) return "";
@@ -66,7 +67,7 @@ string extract_str(const string& text, const string& key) {
     return text.substr(q1 + 1, q2 - q1 - 1);
 }
 
-// Robust double extractor
+// Fast double extraction from JSON fragment
 double extract_double(const string& text, const string& key, double fallback = 1.0) {
     size_t pos = text.find("\"" + key + "\"");
     if (pos == string::npos) return fallback;
@@ -93,6 +94,7 @@ double extract_double(const string& text, const string& key, double fallback = 1
 }
 
 int main(int argc, char* argv[]) {
+    // Fast I/O
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
 
@@ -102,15 +104,15 @@ int main(int argc, char* argv[]) {
     }
 
     if (input_json.empty()) {
-        cout << "{\"status\":\"error\",\"message\":\"Empty JSON\"}\n";
+        cout << "{\"status\":\"error\",\"message\":\"Empty JSON input\"}\n";
         return 1;
     }
 
-    int num_nodes = extract_int(input_json, "num_nodes", 100);
+    int num_nodes = extract_int(input_json, "num_nodes", 50);
     int source = extract_int(input_json, "source", 0);
     int destination = extract_int(input_json, "destination", 0);
 
-    vector<vector<Edge>> adj(max(num_nodes + 10, 200));
+    vector<vector<Edge>> adj(max(num_nodes + 20, 200));
 
     size_t edges_pos = input_json.find("\"edges\"");
     if (edges_pos != string::npos) {
@@ -127,9 +129,10 @@ int main(int argc, char* argv[]) {
 
             if (u >= 0 && v >= 0) {
                 if ((size_t)max(u, v) >= adj.size()) {
-                    adj.resize(max(u, v) + 20);
+                    adj.resize(max(u, v) + 50);
                 }
-                adj[u].push_back({v, w, r_id});
+                // Weights must be non-negative for Dijkstra
+                adj[u].push_back({v, max(0.001, w), r_id});
             }
             cur = end_obj + 1;
         }
@@ -137,13 +140,14 @@ int main(int argc, char* argv[]) {
 
     int total_nodes = adj.size();
     if (source < 0 || source >= total_nodes || destination < 0 || destination >= total_nodes) {
-        cout << "{\"status\":\"error\",\"message\":\"Out of bounds: source=" << source << " dest=" << destination << "\"}\n";
+        cout << "{\"status\":\"error\",\"message\":\"Node index out of bounds: source=" << source << ", dest=" << destination << "\"}\n";
         return 1;
     }
 
-    // Dijkstra Algorithm
+    // Dijkstra's Shortest Path Algorithm
     vector<double> dist(total_nodes, INF);
     vector<EdgePredecessor> parent(total_nodes, {-1, ""});
+    // Min-Heap Priority Queue: (distance, node)
     priority_queue<pair<double, int>, vector<pair<double, int>>, greater<pair<double, int>>> pq;
 
     dist[source] = 0.0;
@@ -175,7 +179,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // Path Reconstruction
+    // Path Reconstruction from destination back to source
     vector<int> node_path;
     vector<string> edge_path;
     int curr = destination;
