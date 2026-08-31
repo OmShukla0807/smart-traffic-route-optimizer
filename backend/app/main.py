@@ -1,5 +1,5 @@
 """
-FastAPI Backend Application for Smart Traffic Route Optimizer.
+FastAPI Backend Application for Path Pilot.
 Coordinates Road Network, ML Inference, C++ Dijkstra Engine, SQLite Database, and Live Incident Simulation.
 """
 
@@ -33,7 +33,7 @@ init_db()
 router_engine = MultiObjectiveRouter()
 
 app = FastAPI(
-    title="Smart Traffic Route Optimizer API",
+    title="Path Pilot API",
     description="Multi-Objective AI Route Optimization using ML Travel-Time Predictions & C++ Dijkstra Engine",
     version="2.0.0"
 )
@@ -59,7 +59,7 @@ def root():
     if os.path.exists(index_file):
         return FileResponse(index_file)
     return {
-        "name": "Smart Traffic Route Optimizer API",
+        "name": "Path Pilot API",
         "status": "online",
         "docs": "/docs",
         "version": "2.0.0"

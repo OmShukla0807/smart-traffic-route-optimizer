@@ -1,5 +1,5 @@
 """
-Unit & Integration Tests for Smart Traffic Route Optimizer.
+Unit & Integration Tests for Path Pilot.
 Tests:
 - ML Model Artifact & 32-Feature Preprocessor
 - C++ Dijkstra Graph Solver with Multi-Objective Weights

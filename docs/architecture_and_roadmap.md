@@ -1,7 +1,7 @@
-# Smart Traffic Route Optimizer — Architecture & System Specification
+# Path Pilot — Architecture & System Specification
 
 ## 1. System Overview
-**Smart Traffic Route Optimizer** is an intelligent transportation routing system that combines **Machine Learning Travel-Time & Energy Inference** with a high-speed **C++ Min-Heap Dijkstra Graph Engine** to solve urban congestion across Delhi NCR.
+**Path Pilot** is an intelligent transportation routing system that combines **Machine Learning Travel-Time & Energy Inference** with a high-speed **C++ Min-Heap Dijkstra Graph Engine** to solve urban congestion across Delhi NCR.
 
 Instead of computing static geometric shortest paths, the system dynamically weights road corridors based on:
 - Live and historical traffic density curves (Peak morning & evening rush hours)

@@ -1,5 +1,5 @@
 """
-Pydantic Schemas for Smart Traffic Route Optimizer API.
+Pydantic Schemas for Path Pilot API.
 Includes multi-objective options for Fastest, Eco-Friendly, Clean Air (AQI), and Weather-Safe.
 """
 

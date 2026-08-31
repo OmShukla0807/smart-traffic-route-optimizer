@@ -57,7 +57,7 @@ def markdown_cell(source):
 
 # Notebook 1: EDA & Traffic Insights
 nb1_cells = [
-    markdown_cell("# 🚦 Smart Traffic Route Optimizer — Exploratory Data Analysis (EDA)\n## Delhi-NCR Probe, Traffic Analytics & AQI Pollution\nThis notebook analyzes speed distributions, congestion density indices, weather slowdown factors, vehicle powertrain energy usage, and Air Quality Index (AQI) variations across 84 Delhi NCR transit corridors."),
+    markdown_cell("# 🚦 Path Pilot — Exploratory Data Analysis (EDA)\n## Delhi-NCR Probe, Traffic Analytics & AQI Pollution\nThis notebook analyzes speed distributions, congestion density indices, weather slowdown factors, vehicle powertrain energy usage, and Air Quality Index (AQI) variations across 84 Delhi NCR transit corridors."),
     code_cell("""
 import os
 import pandas as pd
