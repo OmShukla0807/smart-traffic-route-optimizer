@@ -124,24 +124,25 @@ function updatePlannerInputs() {
 
 function renderPlannerVehicles() {
   const container = document.getElementById("planner-vehicle-grid");
-  if (!container || !appState.vehicles) return;
+  if (!container || !appState.vehicles || appState.vehicles.length === 0) return;
 
   container.innerHTML = "";
   appState.vehicles.forEach(v => {
     const card = document.createElement("div");
-    card.className = `vehicle-card ${appState.selectedVehicle === v.id ? "active" : ""}`;
+    const isActive = appState.selectedVehicle === v.id;
+    card.className = `vehicle-card-pill ${isActive ? "active" : ""}`;
     card.dataset.id = v.id;
     card.innerHTML = `
-      <span class="v-icon">${v.icon}</span>
-      <div class="v-details">
-        <span class="v-name">${v.name.split(" (")[0]}</span>
-        <span class="v-fuel-tag">${v.fuel_type} • ${v.base_rate}</span>
+      <div class="veh-header">
+        <span class="veh-icon">${v.icon}</span>
+        <span class="veh-unit-tag">${v.fuel_unit || "Liters"}</span>
       </div>
-      <div class="v-check">✓</div>
+      <span class="veh-name">${v.name.split(" (")[0]}</span>
+      <span class="veh-desc">${v.efficiency_desc || ""}</span>
     `;
 
     card.addEventListener("click", () => {
-      document.querySelectorAll(".vehicle-card").forEach(c => c.classList.remove("active"));
+      document.querySelectorAll(".vehicle-card-pill").forEach(c => c.classList.remove("active"));
       card.classList.add("active");
       appState.selectedVehicle = v.id;
     });
