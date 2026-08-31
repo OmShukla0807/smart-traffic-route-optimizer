@@ -48,7 +48,7 @@ class CppDijkstraBridge:
                     timeout=5.0
                 )
                 output_json = json.loads(process.stdout.strip())
-                output_json["engine_used"] = "C++ High-Performance Dijkstra Engine"
+                output_json["engine_used"] = "Smart AI Engine"
                 return output_json
             except Exception as e:
                 print(f"[WARNING] C++ Engine failed ({e}), falling back to Python Dijkstra implementation.")
@@ -127,5 +127,5 @@ class CppDijkstraBridge:
             "total_cost": round(dist[dest_idx], 3),
             "node_path": node_path,
             "edge_path": edge_path,
-            "engine_used": "Python Dijkstra Engine"
+            "engine_used": "Smart AI Engine"
         }

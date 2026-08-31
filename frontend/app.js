@@ -11,7 +11,13 @@ let appState = {
   currentView: "planner", // "planner" or "results"
   nodes: [],
   roads: [],
-  vehicles: [],
+  vehicles: [
+    { id: "Petrol_Sedan", name: "Petrol Sedan", icon: "🚗", fuel_unit: "Liters", efficiency_desc: "Standard fuel consumption with stop-and-go penalty." },
+    { id: "Diesel_SUV", name: "Diesel SUV", icon: "🚙", fuel_unit: "Liters", efficiency_desc: "High torque, heavier gradient fuel penalty." },
+    { id: "Electric_Vehicle", name: "Electric Vehicle", icon: "⚡", fuel_unit: "kWh", efficiency_desc: "High urban efficiency, zero direct tailpipe emissions." },
+    { id: "Heavy_Truck", name: "Commercial Heavy Freight Truck", icon: "🚛", fuel_unit: "Liters", efficiency_desc: "High payload, lower top speeds on arterial roads." },
+    { id: "Two_Wheeler", name: "Two-Wheeler / Motorbike", icon: "🏍️", fuel_unit: "Liters", efficiency_desc: "Nimble in congestion, higher vulnerability to weather." }
+  ],
   weatherPresets: [],
   selectedSource: "NODE_CP",
   selectedDestination: "NODE_CYBER",
@@ -70,6 +76,7 @@ const ROUTE_STYLES = {
 // DOM Ready Initialization
 // -------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", async () => {
+  renderPlannerVehicles();
   setupPlannerEventListeners();
   setupResultsEventListeners();
   setupIncidentModalListeners();
@@ -483,8 +490,8 @@ function updateBottomTelemetryHUD(routeKey) {
 
   document.getElementById("quick-mode-title").textContent = activeRoute.mode_title;
   document.getElementById("quick-corridor-label").textContent = activeRoute.route_summary_label;
-  document.getElementById("quick-mode-badge").textContent = activeRoute.mode_badge;
-  document.getElementById("quick-engine-tag").textContent = activeRoute.engine_used || "⚡ C++ Dijkstra";
+  const engineTag = document.getElementById("quick-engine-tag");
+  if (engineTag) engineTag.textContent = activeRoute.engine_used || "⚡ C++ Dijkstra";
 
   document.getElementById("quick-eta").textContent = `${activeRoute.total_time_min} min`;
   document.getElementById("quick-dist").textContent = `${activeRoute.total_distance_km} km`;
