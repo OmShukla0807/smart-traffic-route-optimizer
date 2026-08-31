@@ -1,5 +1,5 @@
 /**
- * Smart Traffic Route Optimizer - Client Application
+ * Path Pilot - Client Application
  * Next-Gen Cyber-Cockpit, Multi-Objective Routing (Fastest, Eco, Clean Air AQI, Weather-Safe),
  * Live Incident Simulator, & Interactive Slide Deck Controller
  */
@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupResultsEventListeners();
   setupIncidentModalListeners();
   setupPresentationDeckListeners();
-  
+
   await loadInitialMetadata();
 });
 
@@ -187,7 +187,7 @@ function setupPlannerEventListeners() {
     const query = input.value.toLowerCase().trim();
     dropdown.innerHTML = "";
 
-    const filtered = appState.nodes.filter(n => 
+    const filtered = appState.nodes.filter(n =>
       n.node_name.toLowerCase().includes(query) ||
       n.zone.toLowerCase().includes(query) ||
       (n.landmark && n.landmark.toLowerCase().includes(query))
@@ -251,11 +251,11 @@ function setupPlannerEventListeners() {
     hourSlider.addEventListener("input", (e) => {
       const h = parseInt(e.target.value, 10);
       appState.hourOfDay = h;
-      
+
       const period = h >= 12 ? "PM" : "AM";
       const displayHour = h % 12 === 0 ? 12 : h % 12;
       const formatted = `${String(displayHour).padStart(2, "0")}:00 ${period}`;
-      
+
       let rushTag = "";
       if ((h >= 8 && h <= 11) || (h >= 17 && h <= 21)) {
         rushTag = " (Peak Rush Hour)";
@@ -351,7 +351,7 @@ function renderResultsCockpit(data) {
   const displayHour = h % 12 === 0 ? 12 : h % 12;
   const timeStr = `${String(displayHour).padStart(2, "0")}:00 ${period}`;
 
-  document.getElementById("res-trip-meta").textContent = 
+  document.getElementById("res-trip-meta").textContent =
     `${vehIcon} ${veh ? veh.name.split(" (")[0] : "Petrol"} • ${appState.weatherCondition} • ${timeStr}`;
 
   // Update Route Pill Time Badges
@@ -477,14 +477,14 @@ function updateBottomTelemetryHUD(routeKey) {
   if (!appState.lastResult) return;
   const rData = appState.lastResult.routes;
   const activeRoute = (routeKey === "all" || !rData[routeKey] || !rData[routeKey].found) ? rData.fastest : rData[routeKey];
-  
+
   if (!activeRoute) return;
 
   document.getElementById("quick-mode-title").textContent = activeRoute.mode_title;
   document.getElementById("quick-corridor-label").textContent = activeRoute.route_summary_label;
   document.getElementById("quick-mode-badge").textContent = activeRoute.mode_badge;
   document.getElementById("quick-engine-tag").textContent = activeRoute.engine_used || "⚡ C++ Dijkstra";
-  
+
   document.getElementById("quick-eta").textContent = `${activeRoute.total_time_min} min`;
   document.getElementById("quick-dist").textContent = `${activeRoute.total_distance_km} km`;
   document.getElementById("quick-fuel").textContent = `${activeRoute.total_fuel_units} ${activeRoute.fuel_unit_name}`;
@@ -593,7 +593,7 @@ function populateDrawerSteps(route) {
 
   route.steps.forEach((step, idx) => {
     const aqiClass = step.aqi_index <= 100 ? "aqi-good" : (step.aqi_index <= 200 ? "aqi-mod" : (step.aqi_index <= 300 ? "aqi-poor" : "aqi-hazard"));
-    
+
     const item = document.createElement("div");
     item.className = "step-item";
     item.innerHTML = `
@@ -670,7 +670,7 @@ function setupResultsEventListeners() {
     pill.addEventListener("click", () => {
       document.querySelectorAll(".map-route-pill").forEach(p => p.classList.remove("active"));
       pill.classList.add("active");
-      
+
       const rKey = pill.dataset.route;
       appState.activeRouteKey = rKey;
       updateBottomTelemetryHUD(rKey);
@@ -775,7 +775,7 @@ function setupIncidentModalListeners() {
       await fetch(`${API_BASE}/api/clear-incidents`, { method: "POST" });
       modal?.classList.add("hidden");
       document.getElementById("results-weather-banner")?.classList.add("hidden");
-      
+
       if (appState.currentView === "results") {
         await executeRouteCalculation();
       }

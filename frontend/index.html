@@ -1,44 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Traffic Route Optimizer | AI + C++ Dijkstra Mission Control</title>
-  
+  <title>Path Pilot | AI + C++ Dijkstra Mission Control</title>
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap"
+    rel="stylesheet">
+
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
 
   <!-- =========================================================================
        PAGE 1: MISSION CONTROL JOURNEY PLANNER VIEW
        ========================================================================= -->
   <div id="view-planner" class="view-page active">
-    
+
     <!-- Top Cyber Navbar -->
     <header class="planner-navbar">
       <div class="brand">
         <div class="brand-icon-pulse">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"
+            stroke-linecap="round" stroke-linejoin="round">
             <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
           </svg>
         </div>
         <div>
-          <h1 class="brand-title">Smart Traffic Route Optimizer</h1>
+          <h1 class="brand-title">Path Pilot</h1>
           <p class="brand-subtitle">AI Travel-Time Inference • C++ Dijkstra • Eco Fuel Physics • Weather Resilience</p>
         </div>
       </div>
 
       <div class="nav-telemetry">
-        <span class="status-badge live" id="badge-ml-status"><span class="pulse-dot"></span> ML Gradient Boosting (R²=0.98)</span>
+        <span class="status-badge live" id="badge-ml-status"><span class="pulse-dot"></span> ML Gradient Boosting
+          (R²=0.98)</span>
         <span class="status-badge cpp" id="badge-cpp-status">⚡ C++ Dijkstra Ready (&lt;1ms)</span>
         <button id="btn-open-ppt" class="btn-deck-trigger" title="Launch Interactive Project Slide Deck">
           <span>📽️ Presentation Mode</span>
@@ -49,30 +56,32 @@
     <!-- Center Hero Card Container -->
     <main class="planner-main">
       <div class="planner-card-container">
-        
+
         <div class="planner-hero-heading">
           <div class="hero-chip">✨ Next-Gen Multi-Objective Navigation Engine</div>
-          <h2>Plan Your Smart Route Across Delhi NCR</h2>
-          <p>Find the optimal trade-off between <strong>Lightning ETA</strong>, <strong>Lowest Energy / Fuel ($CO_2$)</strong>, and <strong>Weather Resilience</strong> across 20 key transit hubs.</p>
+          <h2>Plan Your Route with Path Pilot Across Delhi NCR</h2>
+          <p>Find the optimal trade-off between <strong>Lightning ETA</strong>, <strong>Lowest Energy / Fuel
+              ($CO_2$)</strong>, and <strong>Weather Resilience</strong> across 20 key transit hubs.</p>
         </div>
 
         <div class="planner-card">
-          
+
           <!-- Step 1: Origin and Destination Search -->
           <div class="planner-section">
             <div class="section-badge-header">
               <span class="step-num">01</span>
               <label class="planner-label">Journey Transit Endpoints</label>
             </div>
-            
+
             <div class="endpoints-input-container">
-              
+
               <!-- Origin Search -->
               <div class="search-field-box">
                 <span class="endpoint-marker start">🟢</span>
                 <div class="field-content">
                   <span class="field-title">Starting Location (Origin)</span>
-                  <input type="text" id="planner-search-source" class="planner-text-input" placeholder="Search origin (e.g. Connaught Place, Rohini, Noida, Saket...)" autocomplete="off">
+                  <input type="text" id="planner-search-source" class="planner-text-input"
+                    placeholder="Search origin (e.g. Connaught Place, Rohini, Noida, Saket...)" autocomplete="off">
                 </div>
                 <button id="btn-planner-clear-src" class="btn-clear-x" title="Clear">✕</button>
                 <div id="planner-src-dropdown" class="planner-dropdown hidden"></div>
@@ -80,7 +89,8 @@
 
               <!-- Swap Button -->
               <button id="btn-planner-swap" class="btn-swap-endpoints" title="Swap Origin and Destination">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                   <polyline points="17 14 12 9 7 14"></polyline>
@@ -93,7 +103,9 @@
                 <span class="endpoint-marker dest">🔴</span>
                 <div class="field-content">
                   <span class="field-title">Destination (Target Hub)</span>
-                  <input type="text" id="planner-search-dest" class="planner-text-input" placeholder="Search destination (e.g. Gurgaon Cyber City, IGI Airport, Akshardham...)" autocomplete="off">
+                  <input type="text" id="planner-search-dest" class="planner-text-input"
+                    placeholder="Search destination (e.g. Gurgaon Cyber City, IGI Airport, Akshardham...)"
+                    autocomplete="off">
                 </div>
                 <button id="btn-planner-clear-dst" class="btn-clear-x" title="Clear">✕</button>
                 <div id="planner-dst-dropdown" class="planner-dropdown hidden"></div>
@@ -106,7 +118,8 @@
               <span class="quick-label">⚡ Popular Corridors:</span>
               <button class="quick-chip" data-src="NODE_CP" data-dst="NODE_CYBER">CP ➔ Cyber City</button>
               <button class="quick-chip" data-src="NODE_ROH" data-dst="NODE_IGI">Rohini ➔ IGI Airport T3</button>
-              <button class="quick-chip" data-src="NODE_KG" data-dst="NODE_NOIDA_18">Kashmere Gate ➔ Noida Sec 18</button>
+              <button class="quick-chip" data-src="NODE_KG" data-dst="NODE_NOIDA_18">Kashmere Gate ➔ Noida Sec
+                18</button>
               <button class="quick-chip" data-src="NODE_JAN" data-dst="NODE_AKSHAR">Janakpuri ➔ Akshardham</button>
               <button class="quick-chip" data-src="NODE_SAKET" data-dst="NODE_CYBER">Saket ➔ Cyber City (MG Rd)</button>
             </div>
@@ -125,7 +138,7 @@
 
           <!-- Step 3: Weather Context & Departure Time -->
           <div class="planner-section conditions-grid">
-            
+
             <div class="condition-col">
               <div class="section-badge-header">
                 <span class="step-num">03</span>
@@ -140,7 +153,8 @@
                 <option value="Storm">⛈️ Severe Thunderstorm / High Wind (60km/h)</option>
               </select>
               <div id="weather-hazard-alert" class="weather-mini-pill clear">
-                <span class="hazard-dot"></span> <span id="weather-hazard-desc">Optimal driving conditions across all arterial networks.</span>
+                <span class="hazard-dot"></span> <span id="weather-hazard-desc">Optimal driving conditions across all
+                  arterial networks.</span>
               </div>
             </div>
 
@@ -214,13 +228,14 @@
        PAGE 2: LIVE NAVIGATION COCKPIT & MAP RESULTS VIEW
        ========================================================================= -->
   <div id="view-results" class="view-page">
-    
+
     <!-- Top Floating Navigation Bar -->
     <header class="results-topbar">
-      
+
       <!-- Back to Planner Button -->
       <button id="btn-back-to-planner" class="btn-back-nav" title="Modify Trip Parameters">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
@@ -237,9 +252,10 @@
 
       <!-- Right Action Controls -->
       <div class="results-top-actions">
-        
+
         <!-- Live Incident Simulation Trigger -->
-        <button id="btn-open-incident-modal" class="btn-incident-trigger" title="Simulate Real-Time Road Closure or Waterlogging">
+        <button id="btn-open-incident-modal" class="btn-incident-trigger"
+          title="Simulate Real-Time Road Closure or Waterlogging">
           <span>⚠️ Simulate Road Block</span>
         </button>
 
@@ -260,7 +276,8 @@
         </div>
 
         <!-- Toggle Full Details Drawer -->
-        <button id="btn-toggle-details" class="btn-toggle-info" title="View Detailed Route Analytics & Segment Breakdown">
+        <button id="btn-toggle-details" class="btn-toggle-info"
+          title="View Detailed Route Analytics & Segment Breakdown">
           <span>📊 Full Analytics</span>
           <span class="badge-count" id="details-badge">3 Routes</span>
         </button>
@@ -273,7 +290,7 @@
 
     <!-- Main Map Workspace -->
     <div class="results-map-container">
-      
+
       <!-- Floating Route Selector Tabs -->
       <div class="map-floating-tabs">
         <button class="map-route-pill active" data-route="all">
@@ -359,7 +376,7 @@
       </div>
 
       <div class="drawer-body">
-        
+
         <!-- Comparison Summary Cards -->
         <div class="drawer-section">
           <h4 class="drawer-sec-title">Calculated Route Alternatives</h4>
@@ -408,14 +425,16 @@
           <div class="brand-icon" style="background:#ef4444;">🚧</div>
           <div>
             <h3 class="modal-title">Live Traffic Incident Simulator</h3>
-            <p class="modal-subtitle">Inject real-time road closures or waterlogging to observe instant C++ rerouting</p>
+            <p class="modal-subtitle">Inject real-time road closures or waterlogging to observe instant C++ rerouting
+            </p>
           </div>
           <button id="btn-close-incident-modal" class="btn-clear-x">✕</button>
         </div>
 
         <div class="gmaps-modal-body">
           <p class="modal-desc">
-            Select a road segment to simulate a disruption. The system will update dynamic edge weights and rerun Dijkstra in real-time:
+            Select a road segment to simulate a disruption. The system will update dynamic edge weights and rerun
+            Dijkstra in real-time:
           </p>
 
           <div class="form-group" style="margin-top:12px;">
@@ -446,7 +465,8 @@
 
           <!-- Active Incidents Status Box -->
           <div id="modal-active-incidents-box" class="active-incidents-box" style="margin-top:14px;">
-            <span style="font-size:0.8rem; color:#cbd5e1;">Active Blockades: <strong id="modal-incident-count">0</strong></span>
+            <span style="font-size:0.8rem; color:#cbd5e1;">Active Blockades: <strong
+                id="modal-incident-count">0</strong></span>
           </div>
         </div>
 
@@ -472,17 +492,18 @@
        ========================================================================= -->
   <div id="ppt-modal" class="ppt-modal-container hidden">
     <div class="ppt-deck-wrapper">
-      
+
       <!-- PPT Top Bar -->
       <div class="ppt-topbar">
         <div class="ppt-brand">
           <span class="ppt-logo">📊</span>
           <div>
-            <h4 class="ppt-deck-title">Smart Traffic Route Optimizer — Project Presentation</h4>
-            <span class="ppt-slide-counter">Slide <strong id="ppt-current-num">1</strong> of <strong id="ppt-total-num">8</strong></span>
+            <h4 class="ppt-deck-title">Path Pilot — Project Presentation</h4>
+            <span class="ppt-slide-counter">Slide <strong id="ppt-current-num">1</strong> of <strong
+                id="ppt-total-num">8</strong></span>
           </div>
         </div>
-        
+
         <div class="ppt-actions">
           <button id="btn-ppt-fullscreen" class="ppt-btn-icon" title="Toggle Fullscreen">⛶</button>
           <button id="btn-close-ppt" class="ppt-btn-icon" title="Exit Presentation (Esc)">✕</button>
@@ -491,29 +512,33 @@
 
       <!-- Slide Viewport -->
       <div class="ppt-viewport" id="ppt-viewport">
-        
+
         <!-- Slide 1: Title & Executive Overview -->
         <div class="ppt-slide active" data-slide="1">
           <div class="slide-content">
             <span class="slide-badge">🚀 Smart India Hackathon & AI Showcase</span>
-            <h1 class="slide-headline">Smart Traffic Route Optimizer</h1>
-            <h3 class="slide-subhead">Multi-Objective Navigation via Machine Learning Travel-Time Prediction & C++ Dijkstra Engine</h3>
-            
+            <h1 class="slide-headline">Path Pilot</h1>
+            <h3 class="slide-subhead">Multi-Objective Navigation via Machine Learning Travel-Time Prediction & C++
+              Dijkstra Engine</h3>
+
             <div class="slide-grid-3">
               <div class="slide-card">
                 <div class="card-icon">🧠</div>
                 <h4>ML Predictive ETA</h4>
-                <p>Gradient Boosting & Random Forest models trained on 130K+ Delhi traffic observations achieving $R^2 > 0.98$.</p>
+                <p>Gradient Boosting & Random Forest models trained on 130K+ Delhi traffic observations achieving $R^2 >
+                  0.98$.</p>
               </div>
               <div class="slide-card">
                 <div class="card-icon">⚡</div>
                 <h4>C++ Graph Engine</h4>
-                <p>Native compiled Min-Heap Dijkstra solver delivering sub-millisecond Pareto shortest-path evaluations.</p>
+                <p>Native compiled Min-Heap Dijkstra solver delivering sub-millisecond Pareto shortest-path evaluations.
+                </p>
               </div>
               <div class="slide-card">
                 <div class="card-icon">🌿</div>
                 <h4>Eco & Weather Safe</h4>
-                <p>Multi-objective trade-offs balancing fastest travel time, fuel economy (L/kWh), and hazard avoidance.</p>
+                <p>Multi-objective trade-offs balancing fastest travel time, fuel economy (L/kWh), and hazard avoidance.
+                </p>
               </div>
             </div>
 
@@ -529,22 +554,28 @@
           <div class="slide-content">
             <span class="slide-badge">⚠️ Problem Statement</span>
             <h2 class="slide-headline">The Delhi-NCR Traffic & Environmental Crisis</h2>
-            
+
             <div class="slide-grid-2">
               <div class="slide-card-dark">
                 <h4 style="color:#f43f5e;">Current Navigation Limitations:</h4>
                 <ul class="slide-bullet-list">
-                  <li><strong>Static Distance Bias:</strong> Traditional GPS uses shortest geometric distance, trapping commuters in gridlocked arterial roads.</li>
-                  <li><strong>Single-Objective Blindness:</strong> Existing apps ignore vehicle powertrain physics (EV vs Diesel SUV) and environmental emissions.</li>
-                  <li><strong>Weather Fragility:</strong> Monsoon underpass flooding and winter smog spikes cause catastrophic sudden chokepoints.</li>
+                  <li><strong>Static Distance Bias:</strong> Traditional GPS uses shortest geometric distance, trapping
+                    commuters in gridlocked arterial roads.</li>
+                  <li><strong>Single-Objective Blindness:</strong> Existing apps ignore vehicle powertrain physics (EV
+                    vs Diesel SUV) and environmental emissions.</li>
+                  <li><strong>Weather Fragility:</strong> Monsoon underpass flooding and winter smog spikes cause
+                    catastrophic sudden chokepoints.</li>
                 </ul>
               </div>
               <div class="slide-card-dark">
                 <h4 style="color:#38bdf8;">Our Breakthrough Innovation:</h4>
                 <ul class="slide-bullet-list">
-                  <li><strong>Predictive ML Weights:</strong> Dynamically adjusts graph edge travel times before vehicles enter bottlenecks.</li>
-                  <li><strong>Multi-Criteria Pareto Router:</strong> Simultaneously computes Fastest, Lowest $CO_2$/Fuel, and Weather-Safe routes.</li>
-                  <li><strong>Sub-Millisecond C++ Core:</strong> Ultra-fast execution ready for city-wide fleet deployments.</li>
+                  <li><strong>Predictive ML Weights:</strong> Dynamically adjusts graph edge travel times before
+                    vehicles enter bottlenecks.</li>
+                  <li><strong>Multi-Criteria Pareto Router:</strong> Simultaneously computes Fastest, Lowest
+                    $CO_2$/Fuel, and Weather-Safe routes.</li>
+                  <li><strong>Sub-Millisecond C++ Core:</strong> Ultra-fast execution ready for city-wide fleet
+                    deployments.</li>
                 </ul>
               </div>
             </div>
@@ -571,7 +602,7 @@
           <div class="slide-content">
             <span class="slide-badge">🧠 Machine Learning Pipeline</span>
             <h2 class="slide-headline">Predictive Travel-Time & Energy Inference</h2>
-            
+
             <div class="slide-grid-2">
               <div class="slide-card">
                 <h4>30-Dimensional Feature Vector:</h4>
@@ -627,7 +658,8 @@
             </div>
 
             <div class="slide-callout">
-              <span>💡 <strong>Fuel Prediction Engine:</strong> Gradient Boosting model predicts fuel/kWh consumption with an outstanding <strong>R² of 0.9961</strong>.</span>
+              <span>💡 <strong>Fuel Prediction Engine:</strong> Gradient Boosting model predicts fuel/kWh consumption
+                with an outstanding <strong>R² of 0.9961</strong>.</span>
             </div>
           </div>
         </div>
@@ -637,19 +669,22 @@
           <div class="slide-content">
             <span class="slide-badge">⚡ C++ Engine & Graph Theory</span>
             <h2 class="slide-headline">Microsecond Graph Optimization Core</h2>
-            
+
             <div class="slide-grid-3">
               <div class="slide-card">
                 <h4>Min-Heap Priority Queue</h4>
-                <p>Implemented with <code>std::priority_queue</code> in C++17, reducing time complexity to $O((V + E) \log V)$ for rapid routing.</p>
+                <p>Implemented with <code>std::priority_queue</code> in C++17, reducing time complexity to $O((V + E)
+                  \log V)$ for rapid routing.</p>
               </div>
               <div class="slide-card">
                 <h4>Dynamic Edge Ingestion</h4>
-                <p>ML-predicted edge weights are passed via fast JSON stream, allowing continuous real-time graph re-weighting.</p>
+                <p>ML-predicted edge weights are passed via fast JSON stream, allowing continuous real-time graph
+                  re-weighting.</p>
               </div>
               <div class="slide-card">
                 <h4>Path Reconstruction</h4>
-                <p>Parent predecessor array tracks exact node sequence and road IDs, returning structured routing payloads instantly.</p>
+                <p>Parent predecessor array tracks exact node sequence and road IDs, returning structured routing
+                  payloads instantly.</p>
               </div>
             </div>
 
@@ -679,30 +714,34 @@ while (!pq.empty()) {
           <div class="slide-content">
             <span class="slide-badge">🎯 Optimization Strategies</span>
             <h2 class="slide-headline">Multi-Objective Pareto Trade-Offs</h2>
-            
+
             <div class="slide-grid-3">
               <div class="slide-card border-cyan">
                 <div class="card-icon">⚡</div>
                 <h4 style="color:#38bdf8;">Fastest Route</h4>
-                <p>Minimizes ML travel time ($W_{\text{time}} = 1.0$). Prioritizes high-speed expressways and clear corridors.</p>
+                <p>Minimizes ML travel time ($W_{\text{time}} = 1.0$). Prioritizes high-speed expressways and clear
+                  corridors.</p>
                 <div class="badge-tag">Best for Urgency</div>
               </div>
               <div class="slide-card border-green">
                 <div class="card-icon">🌿</div>
                 <h4 style="color:#34d399;">Eco-Friendly Route</h4>
-                <p>Minimizes fuel/kWh ($W_{\text{fuel}} = 0.85, W_{\text{time}} = 0.15$). Avoids stop-and-go crawl segments and steep inclines.</p>
+                <p>Minimizes fuel/kWh ($W_{\text{fuel}} = 0.85, W_{\text{time}} = 0.15$). Avoids stop-and-go crawl
+                  segments and steep inclines.</p>
                 <div class="badge-tag">Saves up to 18% Fuel</div>
               </div>
               <div class="slide-card border-amber">
                 <div class="card-icon">🛡️</div>
                 <h4 style="color:#fbbf24;">Weather-Safe Route</h4>
-                <p>Maximizes safety ($W_{\text{weather}} = 0.75$). Bypasses flood-prone underpasses and fog hazard river bridges.</p>
+                <p>Maximizes safety ($W_{\text{weather}} = 0.75$). Bypasses flood-prone underpasses and fog hazard river
+                  bridges.</p>
                 <div class="badge-tag">95%+ Safety Score</div>
               </div>
             </div>
 
             <div class="slide-formula-box">
-              <span>$$\text{Composite Edge Cost} = (W_{\text{time}} \cdot T_{\text{pred}}) + (W_{\text{fuel}} \cdot F_{\text{pred}} \cdot \alpha) + (W_{\text{weather}} \cdot H_{\text{hazard}})$$</span>
+              <span>$$\text{Composite Edge Cost} = (W_{\text{time}} \cdot T_{\text{pred}}) + (W_{\text{fuel}} \cdot
+                F_{\text{pred}} \cdot \alpha) + (W_{\text{weather}} \cdot H_{\text{hazard}})$$</span>
             </div>
           </div>
         </div>
@@ -712,7 +751,7 @@ while (!pq.empty()) {
           <div class="slide-content">
             <span class="slide-badge">🏗️ System Architecture</span>
             <h2 class="slide-headline">Full-Stack Production Pipeline</h2>
-            
+
             <div class="arch-flow-grid">
               <div class="arch-node">
                 <span class="arch-num">1</span>
@@ -746,7 +785,8 @@ while (!pq.empty()) {
             </div>
 
             <div class="slide-callout" style="margin-top:20px;">
-              <span>✅ <strong>Modularity:</strong> Fully decoupled components allow independent scaling of the C++ solver, ML retrainers, and client dashboards.</span>
+              <span>✅ <strong>Modularity:</strong> Fully decoupled components allow independent scaling of the C++
+                solver, ML retrainers, and client dashboards.</span>
             </div>
           </div>
         </div>
@@ -756,12 +796,13 @@ while (!pq.empty()) {
           <div class="slide-content">
             <span class="slide-badge">🌍 Real-World Impact</span>
             <h2 class="slide-headline">Measurable City-Scale Benefits</h2>
-            
+
             <div class="slide-grid-3">
               <div class="stat-card">
                 <span class="stat-big green">14.8%</span>
                 <h4>Average Fuel Saved</h4>
-                <p>Using Eco-routing over static routing reduces unneeded idling and excessive stop-and-go acceleration.</p>
+                <p>Using Eco-routing over static routing reduces unneeded idling and excessive stop-and-go acceleration.
+                </p>
               </div>
               <div class="stat-card">
                 <span class="stat-big cyan">1.4 kg</span>
@@ -771,13 +812,15 @@ while (!pq.empty()) {
               <div class="stat-card">
                 <span class="stat-big amber">₹ 140+</span>
                 <h4>Cost Saved Per Roundtrip</h4>
-                <p>Substantial direct financial savings for commercial logistics, cab aggregators, and daily commuters.</p>
+                <p>Substantial direct financial savings for commercial logistics, cab aggregators, and daily commuters.
+                </p>
               </div>
             </div>
 
             <div class="slide-card-dark" style="margin-top:16px;">
               <h4>Smart City Integration:</h4>
-              <p>Can integrate with municipal traffic lights (ITMS) to provide green-wave synchronization along ML-optimized arteries.</p>
+              <p>Can integrate with municipal traffic lights (ITMS) to provide green-wave synchronization along
+                ML-optimized arteries.</p>
             </div>
           </div>
         </div>
@@ -787,14 +830,17 @@ while (!pq.empty()) {
           <div class="slide-content">
             <span class="slide-badge">🔮 Future Scope & Conclusion</span>
             <h2 class="slide-headline">Future Scope & Hackathon Summary</h2>
-            
+
             <div class="slide-grid-2">
               <div class="slide-card">
                 <h4>Future Horizons:</h4>
                 <ul class="slide-bullet-list">
-                  <li><strong>V2X (Vehicle-to-Everything):</strong> Live vehicle probe telemetry ingestion over WebSockets.</li>
-                  <li><strong>Reinforcement Learning (RL):</strong> Deep Q-Learning for dynamic traffic light timing at major intersections.</li>
-                  <li><strong>EV Charging Integration:</strong> Automatic routing with battery state-of-charge (SoC) and charger availability.</li>
+                  <li><strong>V2X (Vehicle-to-Everything):</strong> Live vehicle probe telemetry ingestion over
+                    WebSockets.</li>
+                  <li><strong>Reinforcement Learning (RL):</strong> Deep Q-Learning for dynamic traffic light timing at
+                    major intersections.</li>
+                  <li><strong>EV Charging Integration:</strong> Automatic routing with battery state-of-charge (SoC) and
+                    charger availability.</li>
                 </ul>
               </div>
               <div class="slide-card">
@@ -819,7 +865,7 @@ while (!pq.empty()) {
       <!-- PPT Navigation Footer -->
       <div class="ppt-footer">
         <button id="btn-ppt-prev" class="ppt-btn-nav">◄ Previous Slide</button>
-        
+
         <div class="ppt-dots" id="ppt-dots-container">
           <!-- Dynamically populated 8 dots -->
         </div>
@@ -831,8 +877,10 @@ while (!pq.empty()) {
   </div>
 
   <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <!-- Custom Application JS -->
   <script src="/static/app.js"></script>
 </body>
+
 </html>

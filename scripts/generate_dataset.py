@@ -1,5 +1,5 @@
 """
-Comprehensive Data Generation Script for Smart Traffic Route Optimizer.
+Comprehensive Data Generation Script for Path Pilot.
 Generates:
 1. data/processed/nodes.csv (20 prominent Delhi NCR transit hubs)
 2. data/processed/roads.csv (84 real interconnected Delhi NCR corridors with exact geodesic distances and AQI pollution levels)

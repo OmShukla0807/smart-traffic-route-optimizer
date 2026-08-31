@@ -1,10 +1,10 @@
-# Smart Traffic Route Optimizer — Presentation Deck Transcript & Speaker Notes
+# Path Pilot — Presentation Deck Transcript & Speaker Notes
 
 ## Slide 1: Title & Executive Overview
-- **Headline**: Smart Traffic Route Optimizer
+- **Headline**: Path Pilot
 - **Subtitle**: Multi-Objective Navigation via Machine Learning Travel-Time Prediction & C++ Dijkstra Engine
 - **Speaker Notes**:
-  > "Good morning evaluators and jury members. Urban congestion in metropolitan areas like Delhi NCR results in billions of dollars in wasted fuel and millions of lost hours every single year. Today, we present the Smart Traffic Route Optimizer—a next-generation navigation system that combines Machine Learning predictive travel time modeling with a compiled C++ Dijkstra graph engine to provide multi-objective Pareto routing: Fastest ETA, Eco-Friendly Fuel/EV Energy savings, and Weather-Resilient hazard bypass."
+  > "Good morning evaluators and jury members. Urban congestion in metropolitan areas like Delhi NCR results in billions of dollars in wasted fuel and millions of lost hours every single year. Today, we present Path Pilot—a next-generation navigation system that combines Machine Learning predictive travel time modeling with a compiled C++ Dijkstra graph engine to provide multi-objective Pareto routing: Fastest ETA, Eco-Friendly Fuel/EV Energy savings, and Weather-Resilient hazard bypass."
 
 ---
 

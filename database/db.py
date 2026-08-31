@@ -1,5 +1,5 @@
 """
-Database Layer for Smart Traffic Route Optimizer using SQLite.
+Database Layer for Path Pilot using SQLite.
 Phase 13: Manages persistence for Delhi road networks, query history,
 and live incident simulation states with AQI pollution metrics.
 """

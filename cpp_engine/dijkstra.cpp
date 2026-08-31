@@ -1,5 +1,5 @@
 /**
- * Smart Traffic Route Optimizer - High-Performance C++ Dijkstra Engine
+ * Path Pilot - High-Performance C++ Dijkstra Engine
  * Phase 10: Standalone C++ Graph Engine utilizing Min-Heap Priority Queue,
  * Adjacency Lists, Distance Array, and Predecessor Tracking for Path Reconstruction.
  */
